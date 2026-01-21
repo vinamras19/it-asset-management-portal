@@ -13,7 +13,7 @@ A comprehensive inventory management system designed for enterprise IT operation
 
 * **Performance & Caching:** Utilizes [Redis](https://redis.io/) to cache high-frequency read operations (such as dashboard analytics and category counts), significantly reducing load on the primary MongoDB database during peak traffic.
 * **Security Architecture:** Implements a secure authentication flow using JWTs in http-only cookies to prevent XSS. Critical actions are protected by [Speakeasy (TOTP)](https://github.com/speakeasyjs/speakeasy), Rate Limiting, and strict Role-Based Access Control (RBAC).
-* **Data Processing:** Leverages [MongoDB Aggregation Pipelines](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) to perform server-side calculations for asset depreciation, current value, and carbon footprint analysis, removing processing overhead from the application layer.
+* **Data Processing:** Leverages [MongoDB Aggregation Pipelines](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) to perform server-side calculations for departmental spending, category distribution, and average asset age, removing processing overhead from the application layer.
 * **Asset Lifecycle:** Enforces a structured state machine for assets (Procured → Available → Allocated → Maintenance → Retired), ensuring audit trails are maintained for every status change.
 
 ## Architecture
@@ -33,13 +33,13 @@ graph TD
 
 1. Clone the Repository
 ```text
-git clone [https://github.com/yourusername/it-asset-portal.git](https://github.com/yourusername/it-asset-portal.git)
-cd it-asset-portal
+git clone [https://github.com/vinamras19/it-asset-management-portal.git]
+cd it-asset-management-portal
 ```
-2. Configure Environment Create a .env file in the root directory (refer to .env.example).
+2. Configure Environment Create a .env file in the root directory.
 ```text
 MONGO_URI=mongodb://mongo:27017/it_asset_management
-UPSTASH_REDIS_URL=redis://redis:6379
+UPSTASH_REDIS_URL=rediss://default:yourpassword@usernamename.upstash.io:6379
 ACCESS_TOKEN_SECRET=your_secret_key
 REFRESH_TOKEN_SECRET=your_refresh_secret
 CLIENT_URL=http://localhost:5000
