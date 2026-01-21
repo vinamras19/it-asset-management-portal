@@ -13,22 +13,38 @@ A comprehensive inventory management system designed for enterprise IT operation
 
 * **Performance & Caching:** Utilizes [Redis](https://redis.io/) to cache high-frequency read operations (such as dashboard analytics and category counts), significantly reducing load on the primary MongoDB database during peak traffic.
 * **Security Architecture:** Implements a secure authentication flow using JWTs in http-only cookies to prevent XSS. Critical actions are protected by [Speakeasy (TOTP)](https://github.com/speakeasyjs/speakeasy), Rate Limiting, and strict Role-Based Access Control (RBAC).
-* **Data Processing:** Leverages [MongoDB Aggregation Pipelines](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) to perform server-side calculations for departmental spending, category distribution, and average asset age, removing processing overhead from the application layer.
+* **Data Processing:** Leverages [MongoDB Aggregation Pipelines](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) for server-side departmental spend analysis and client-side utilities for real-time carbon footprint and double-declining depreciation calculations. Logic is split between backend aggregations for reporting and frontend utilities for real-time asset metrics.
 * **Asset Lifecycle:** Enforces a structured state machine for assets (Procured → Available → Allocated → Maintenance → Retired), ensuring audit trails are maintained for every status change.
 
 ## Architecture
 
 The system follows a tiered architecture separating the client, API, and data layers, containerized via Docker.
 
+### High-Level Infrastructure
 ```mermaid
 graph TD
     Client[React Frontend] -->|HTTPS| API[Node.js Express API]
     API -->|Read-Through Cache| Cache[(Redis)]
     API -->|Persistent Storage| DB[(MongoDB)]
-    API -->|Media Storage| CDN[Cloudinary]
     API -->|Security| Auth[TOTP & JWT]
 ```
+### Functional Logic Distribution
+```mermaid
+graph LR
+    subgraph Frontend [Client-Side Logic]
+        UI[User Dashboard]
+        Math[Depreciation & Carbon Utility]
+    end
 
+    subgraph Backend [Server-Side Logic]
+        Agg[MongoDB Aggregations]
+        Cache_L[Redis Cache Management]
+    end
+
+    Agg -->|Aggregated Totals| UI
+    Math -->|Real-time Interactive Metrics| UI
+    Cache_L -.->|300s TTL| Agg
+```
 ## Getting Started
 
 1. Clone the Repository
@@ -68,9 +84,14 @@ Credentials:
 
 Check: Notice that the "Admin Dashboard" loads with charts visible.
 ```
-2. Caching Verification: Make a request to the analytics endpoint. The first request should take ~100-200ms (DB fetch), and subsequent requests should take <10ms (Redis hit).
+2. Caching Verification: 
+
 ```text
-curl -I http://localhost:5000/api/analytics
+Open the browser's Developer Tools (F12) → Network Tab. Refresh the Admin Dashboard.
+
+First Load: The /api/analytics request will show a longer response time (~100-200ms) as it fetches from MongoDB.
+Subsequent Loads: The response time will drop significantly (<10ms) as the data is served from the Redis cache.
+Verification: Check the response headers or the _meta field in the JSON response to see the cachedAt timestamp.
 ```
 3. Procurement Workflow:
 ```text
@@ -79,4 +100,4 @@ Login as employee → Add an item to your selection and submit a request → Log
 ## License
 See `LICENSE` for more information.
 
-> **Note:** This project was architected and developed in Q3 2025. Source code migrated to public repository in Jan 2026.
+> **Note:** This project was developed in Q3 2025. Source code migrated to public repository in Jan 2026.
