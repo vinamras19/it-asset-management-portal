@@ -9,9 +9,12 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5000
-      - MONGO_URI=${MONGO_URI}
+      # Force connection to the internal 'mongo' service, not Atlas
+      - MONGO_URI=mongodb://mongo:27017/itassetmgmt
+      # Force connection to the internal 'redis' service
       - UPSTASH_REDIS_URL=redis://redis:6379
-      - CLIENT_URL=http://localhost:3000
+      # Production serves frontend on same port (5000)
+      - CLIENT_URL=http://localhost:5000
     depends_on:
       mongo:
         condition: service_started
