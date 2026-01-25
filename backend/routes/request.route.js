@@ -1,5 +1,6 @@
 import express from "express";
 import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
+
 import {
     createRequest,
     getMyRequests,
@@ -9,12 +10,13 @@ import {
     cancelRequest,
     getRequestStats
 } from "../controllers/request.controller.js";
-import { validateCreateOrder } from "../middleware/validation.js";
+
+import { validateCreateRequest } from "../middleware/validation.js";
 
 const router = express.Router();
 
 // Employee Routes
-router.post("/", protectRoute, validateCreateOrder, createRequest);
+router.post("/", protectRoute, validateCreateRequest, createRequest);
 router.get("/", protectRoute, getMyRequests);
 router.get("/my", protectRoute, getMyRequests);
 router.patch("/:id/cancel", protectRoute, cancelRequest);

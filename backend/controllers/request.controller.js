@@ -1,118 +1,99 @@
 import Request from "../models/request.model.js";
 import Asset from "../models/asset.model.js";
-import User from "../models/user.model.js";
-import { createAuditLog } from "./audit.controller.js";
-import { cacheInvalidatePattern } from "../lib/cache.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
+
+export const getMyRequests = asyncHandler(async (req, res) => {
+    const requests = await Request.find({ user: req.user._id })
+        .populate("assets.asset", "name category price")
+        .sort({ createdAt: -1 });
+    res.json(requests);
+});
+
+export const getRequestById = asyncHandler(async (req, res) => {
+    const request = await Request.findById(req.params.id)
+        .populate("user", "name email department")
+        .populate("assets.asset", "name price image");
+
+    if (!request) {
+        res.status(404);
+        throw new Error("Request not found");
+    }
+
+    // Security: Users can only see their own requests (unless Admin)
+    if (request.user._id.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+        res.status(403);
+        throw new Error("Not authorized to view this request");
+    }
+
+    res.json(request);
+});
+
+export const getAllRequests = asyncHandler(async (req, res) => {
+    const requests = await Request.find({})
+        .populate("user", "name email")
+        .sort({ createdAt: -1 });
+    res.json(requests);
+});
+
+export const getRequestStats = asyncHandler(async (req, res) => {
+    const stats = await Request.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 }, totalValue: { $sum: "$totalAmount" } } }
+    ]);
+    res.json(stats);
+});
+
 export const createRequest = async (req, res) => {
     try {
-        const { assets, totalAmount, justification, priority, deliveryLocation } = req.body;
+        const { assets, justification, priority, deliveryLocation } = req.body;
 
-        if (!Array.isArray(assets) || assets.length === 0) {
+        if (!assets || assets.length === 0) {
             return res.status(400).json({ message: "No assets selected" });
         }
+
+        // 1. Calculate Total & Validate Assets
+        let totalAmount = 0;
         const requestAssets = [];
+
         for (const item of assets) {
-            const asset = await Asset.findById(item.asset || item._id || item.product);
+            const asset = await Asset.findById(item.assetId);
             if (!asset) {
-                return res.status(404).json({ message: `Asset not found: ${item.asset || item._id}` });
+                return res.status(404).json({ message: `Asset not found: ${item.assetId}` });
             }
+
+            // Business Logic: Prevent requesting retired assets
+            if (asset.status === 'retired') {
+                return res.status(400).json({ message: `Cannot request retired asset: ${asset.name}` });
+            }
+
             requestAssets.push({
                 asset: asset._id,
                 quantity: item.quantity || 1,
-                priceAtRequest: asset.price || 0,
+                priceAtRequest: asset.purchasePrice
             });
+            totalAmount += asset.purchasePrice * (item.quantity || 1);
         }
-        const calculatedTotal = requestAssets.reduce(
-            (sum, item) => sum + (item.priceAtRequest * item.quantity),
-            0
-        );
 
-        const newRequest = new Request({
+        // 2. Create Request
+        const newRequest = await Request.create({
             user: req.user._id,
             assets: requestAssets,
-            totalAmount: totalAmount || calculatedTotal,
-            justification: justification || "",
+            totalAmount,
+            justification,
             priority: priority || "Normal",
-            deliveryLocation: deliveryLocation || {},
-            status: "Pending",
+            deliveryLocation
         });
 
-        await newRequest.save();
-        await User.findByIdAndUpdate(req.user._id, { selectedItems: [] });
-        try {
-            await createAuditLog({
-                userId: req.user._id,
-                action: "REQUEST_CREATED",
-                resource: "Request",
-                resourceId: newRequest._id.toString(),
-                details: `Request ${newRequest.requestNumber} created with ${requestAssets.length} items`,
-                ipAddress: req.ip,
-                status: "SUCCESS",
-            });
-        } catch (e) {  }
-        await cacheInvalidatePattern("requests:*");
-
         res.status(201).json(newRequest);
+
     } catch (error) {
-                res.status(500).json({ message: "Server error", error: error.message });
+        console.error("Procurement Request Failed:", error);
+        res.status(500).json({ message: "Failed to submit request", error: error.message });
     }
 };
-export const getMyRequests = async (req, res) => {
-    try {
-        const requests = await Request.find({ user: req.user._id })
-            .populate("assets.asset", "name image category price")
-            .sort({ createdAt: -1 });
-        res.json(requests);
-    } catch (error) {
-                res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
-export const getAllRequests = async (req, res) => {
-    try {
-        const { status, priority } = req.query;
-        const query = {};
 
-        if (status) query.status = status;
-        if (priority) query.priority = priority;
-
-        const requests = await Request.find(query)
-            .populate("user", "name email department")
-            .populate("assets.asset", "name image category price status")
-            .populate("approvedBy", "name")
-            .populate("fulfilledBy", "name")
-            .sort({ createdAt: -1 });
-
-        res.json(requests);
-    } catch (error) {
-                res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
-export const getRequestById = async (req, res) => {
-    try {
-        const request = await Request.findById(req.params.id)
-            .populate("user", "name email department")
-            .populate("assets.asset")
-            .populate("approvedBy", "name")
-            .populate("fulfilledBy", "name");
-
-        if (!request) {
-            return res.status(404).json({ message: "Request not found" });
-        }
-        const isOwner = request.user._id.toString() === req.user._id.toString();
-        const isAdmin = ["admin", "warehouse_manager"].includes(req.user.role);
-
-        if (!isOwner && !isAdmin) {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
-        res.json(request);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
 export const updateRequestStatus = async (req, res) => {
     try {
-        const { status, rejectionReason, adminNotes } = req.body;
+        const { status, reason, adminNotes } = req.body;
         const request = await Request.findById(req.params.id);
 
         if (!request) {
@@ -121,125 +102,55 @@ export const updateRequestStatus = async (req, res) => {
 
         const oldStatus = request.status;
         request.status = status;
-        if (status === "Approved" && oldStatus !== "Approved") {
+        request.adminNotes = adminNotes || request.adminNotes;
+
+        if (status === "Approved") {
             request.approvedBy = req.user._id;
-            request.approvedAt = new Date();
-        }
-        if (status === "Rejected") {
-            request.rejectionReason = rejectionReason || "";
-        }
-        if (status === "Fulfilled" && oldStatus !== "Fulfilled") {
+            request.approvedAt = Date.now();
+        } else if (status === "Rejected") {
+            request.rejectionReason = reason;
+        } else if (status === "Fulfilled" && oldStatus !== "Fulfilled") {
             request.fulfilledBy = req.user._id;
-            request.fulfilledAt = new Date();
+            request.fulfilledAt = Date.now();
+
+            // Business Logic: Assign assets to user
             for (const item of request.assets) {
                 await Asset.findByIdAndUpdate(item.asset, {
-                    status: "Assigned",
+                    status: "assigned", // Lowercase Enum Fix
                     assignedTo: request.user,
-                    $push: {
-                        history: {
-                            action: "Assigned",
-                            user: req.user.name || "Admin",
-                            details: `Assigned via request ${request.requestNumber}`,
-                            date: new Date(),
-                        }
-                    }
+                    location: request.deliveryLocation?.desk || "User Desk"
                 });
             }
         }
 
-        if (adminNotes) {
-            request.adminNotes = adminNotes;
-        }
-
         await request.save();
-        try {
-            await createAuditLog({
-                userId: req.user._id,
-                action: `REQUEST_${status.toUpperCase()}`,
-                resource: "Request",
-                resourceId: request._id.toString(),
-                changes: { before: { status: oldStatus }, after: { status } },
-                ipAddress: req.ip,
-                status: "SUCCESS",
-            });
-        } catch (error) {
-            console.error("Audit Log Error:", error.message);
-        }
-        await cacheInvalidatePattern("requests:*");
-        await cacheInvalidatePattern("assets:*");
-        await cacheInvalidatePattern("analytics:*");
-        const updatedRequest = await Request.findById(request._id)
-            .populate("user", "name email department")
-            .populate("assets.asset", "name image category")
-            .populate("approvedBy", "name")
-            .populate("fulfilledBy", "name");
+        res.json(request);
 
-        res.json(updatedRequest);
     } catch (error) {
-                res.status(500).json({ message: "Server error", error: error.message });
+        console.error("Status Update Failed:", error);
+        res.status(500).json({ message: "Update failed", error: error.message });
     }
 };
+
 export const cancelRequest = async (req, res) => {
     try {
         const request = await Request.findById(req.params.id);
 
-        if (!request) {
-            return res.status(404).json({ message: "Request not found" });
-        }
+        if (!request) return res.status(404).json({ message: "Not found" });
+
+        // Authorization Check
         if (request.user.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: "Access denied" });
+            return res.status(403).json({ message: "Unauthorized" });
         }
+
         if (request.status !== "Pending") {
-            return res.status(400).json({
-                message: "Can only cancel pending requests"
-            });
+            return res.status(400).json({ message: "Cannot cancel processed request" });
         }
 
         request.status = "Cancelled";
         await request.save();
-        try {
-            await createAuditLog({
-                userId: req.user._id,
-                action: "REQUEST_CANCELLED",
-                resource: "Request",
-                resourceId: request._id.toString(),
-                ipAddress: req.ip,
-                status: "SUCCESS",
-            });
-        } catch (error) {
-            console.error("Audit Log Error:", error.message);
-        }
 
-        res.json({ message: "Request cancelled", request });
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
-export const getRequestStats = async (req, res) => {
-    try {
-        const stats = await Request.aggregate([
-            {
-                $group: {
-                    _id: "$status",
-                    count: { $sum: 1 },
-                    totalValue: { $sum: "$totalAmount" },
-                }
-            }
-        ]);
-
-        const pending = stats.find(s => s._id === "Pending") || { count: 0, totalValue: 0 };
-        const approved = stats.find(s => s._id === "Approved") || { count: 0, totalValue: 0 };
-        const fulfilled = stats.find(s => s._id === "Fulfilled") || { count: 0, totalValue: 0 };
-        const rejected = stats.find(s => s._id === "Rejected") || { count: 0, totalValue: 0 };
-
-        res.json({
-            pending: pending.count,
-            approved: approved.count,
-            fulfilled: fulfilled.count,
-            rejected: rejected.count,
-            pendingValue: pending.totalValue,
-            totalRequests: stats.reduce((sum, s) => sum + s.count, 0),
-        });
+        res.json({ message: "Request cancelled" });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
     }

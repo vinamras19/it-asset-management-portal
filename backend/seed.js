@@ -24,7 +24,6 @@ const connectDB = async () => {
     }
 };
 
-
 const images = {
 
     macbookPro16: 'https://res.cloudinary.com/dze4vfn4n/image/upload/v1767554320/macbookpro16_zmx8ct.jpg',
@@ -105,150 +104,50 @@ const images = {
 
 	};
 
-
 const users = [
-    // ADMIN USERS
+    // 1. THE ADMIN (You/IT) - Full Access
     {
-        name: 'System Administrator',
+        name: 'System Admin',
         email: 'admin@vsitcompany.com',
         password: 'Admin@123',
         role: 'admin',
-        department: 'Engineering',
-        phone: '+1 (555) 100-0001',
+        department: 'IT',
+        phone: '555-0001',
     },
+
+    // 2. THE MANAGER - Can Approve Requests
     {
-        name: 'IT Director',
-        email: 'it.director@vsitcompany.com',
-        password: 'Admin@123',
-        role: 'admin',
-        department: 'Engineering',
-        phone: '+1 (555) 100-0002',
-    },
-    // WAREHOUSE MANAGERS
-    {
-        name: 'Warehouse Manager',
-        email: 'warehouse@vsitcompany.com',
-        password: 'Warehouse@123',
-        role: 'warehouse_manager',
+        name: 'Operations Manager',
+        email: 'manager@vsitcompany.com',
+        password: 'Manager@123',
+        role: 'manager',
         department: 'Operations',
-        phone: '+1 (555) 200-0001',
+        phone: '555-0002',
     },
+
+    // 3. THE AUDITOR - View Only / Reports
     {
-        name: 'Asset Coordinator',
-        email: 'assets@vsitcompany.com',
-        password: 'Warehouse@123',
-        role: 'warehouse_manager',
-        department: 'Operations',
-        phone: '+1 (555) 200-0002',
-    },
-    // AUDITORS
-    {
-        name: 'Compliance Auditor',
+        name: 'Compliance Officer',
         email: 'auditor@vsitcompany.com',
         password: 'Auditor@123',
         role: 'auditor',
-        department: 'Operations',
-        phone: '+1 (555) 300-0001',
+        department: 'Legal',
+        phone: '555-0003',
     },
+
+    // 4. THE EMPLOYEE - Standard User (Requests Assets)
     {
-        name: 'Security Analyst',
-        email: 'security@vsitcompany.com',
-        password: 'Auditor@123',
-        role: 'auditor',
-        department: 'Engineering',
-        phone: '+1 (555) 300-0002',
-    },
-    // EMPLOYEES - Engineering
-    {
-        name: 'John Smith',
-        email: 'john.smith@vsitcompany.com',
+        name: 'Claire Brooks',
+        email: 'employee@vsitcompany.com',
         password: 'User@123',
         role: 'employee',
         department: 'Engineering',
-        phone: '+1 (555) 400-0001',
-    },
-    {
-        name: 'Alice Chen',
-        email: 'alice.chen@vsitcompany.com',
-        password: 'User@123',
-        role: 'employee',
-        department: 'Engineering',
-        phone: '+1 (555) 400-0002',
-    },
-    {
-        name: 'Bob Williams',
-        email: 'bob.williams@vsitcompany.com',
-        password: 'User@123',
-        role: 'employee',
-        department: 'Engineering',
-        phone: '+1 (555) 400-0003',
-    },
-    // EMPLOYEES - Marketing
-    {
-        name: 'Sarah Johnson',
-        email: 'sarah.johnson@vsitcompany.com',
-        password: 'User@123',
-        role: 'employee',
-        department: 'Marketing',
-        phone: '+1 (555) 500-0001',
-    },
-    {
-        name: 'Michael Chen',
-        email: 'michael.chen@vsitcompany.com',
-        password: 'User@123',
-        role: 'employee',
-        department: 'Marketing',
-        phone: '+1 (555) 500-0002',
-    },
-    // EMPLOYEES - Sales
-    {
-        name: 'David Wilson',
-        email: 'david.wilson@vsitcompany.com',
-        password: 'User@123',
-        role: 'employee',
-        department: 'Sales',
-        phone: '+1 (555) 600-0001',
-    },
-    {
-        name: 'Amanda Taylor',
-        email: 'amanda.taylor@vsitcompany.com',
-        password: 'User@123',
-        role: 'employee',
-        department: 'Sales',
-        phone: '+1 (555) 600-0002',
-    },
-    // EMPLOYEES - HR
-    {
-        name: 'Emily Davis',
-        email: 'emily.davis@vsitcompany.com',
-        password: 'User@123',
-        role: 'employee',
-        department: 'HR',
-        phone: '+1 (555) 700-0001',
-    },
-    // EMPLOYEES - Executive
-    {
-        name: 'Robert Martinez',
-        email: 'robert.martinez@vsitcompany.com',
-        password: 'User@123',
-        role: 'employee',
-        department: 'Executive',
-        phone: '+1 (555) 800-0001',
-    },
-    // EMPLOYEES - General
-    {
-        name: 'Jessica Brown',
-        email: 'jessica.brown@vsitcompany.com',
-        password: 'User@123',
-        role: 'employee',
-        department: 'General',
-        phone: '+1 (555) 900-0001',
-    },
+        phone: '555-0004',
+    }
 ];
 
-
-        console.log('Seeding assets...');
-        const assets = [
+        console.log('Seeding assets');
+        const rawAssets = [
 
     {
         name: 'MacBook Pro 16" M3 Max',
@@ -256,7 +155,7 @@ const users = [
         price: 3499,
         category: 'Laptops',
         image: images.macbookPro16 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple M3 Max (16-core CPU)',
@@ -280,7 +179,7 @@ const users = [
         price: 1999,
         category: 'Laptops',
         image: images.macbookPro14 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple M3 Pro (12-core CPU)',
@@ -304,7 +203,7 @@ const users = [
         price: 1299,
         category: 'Laptops',
         image: images.macbookAir15 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple M3 (8-core CPU)',
@@ -328,7 +227,7 @@ const users = [
         price: 2299,
         category: 'Laptops',
         image: images.dellXPS15 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i9-13900H (14-core, up to 5.4GHz)',
@@ -352,7 +251,7 @@ const users = [
         price: 1499,
         category: 'Laptops',
         image: images.dellXPS13Plus || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i7-1360P (12-core, up to 5.0GHz)',
@@ -376,7 +275,7 @@ const users = [
         price: 1649,
         category: 'Laptops',
         image: images.thinkpadX1Carbon || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i7-1365U vPro (10-core, up to 5.2GHz)',
@@ -400,7 +299,7 @@ const users = [
         price: 1299,
         category: 'Laptops',
         image: images.thinkpadT14s || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'AMD Ryzen 7 PRO 7840U (8-core, up to 5.1GHz)',
@@ -424,7 +323,7 @@ const users = [
         price: 1899,
         category: 'Laptops',
         image: images.hpEliteBook860 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i7-1365U vPro (10-core, up to 5.2GHz)',
@@ -448,7 +347,7 @@ const users = [
         price: 1699,
         category: 'Laptops',
         image: images.hpSpectrex360 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i7-1360P (12-core, up to 5.0GHz)',
@@ -472,7 +371,7 @@ const users = [
         price: 999,
         category: 'Laptops',
         image: images.dellLatitude5540 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i5-1345U (10-core, up to 4.7GHz)',
@@ -498,7 +397,7 @@ const users = [
         price: 3999,
         category: 'Desktops',
         image: images.macStudioM2Ultra || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple M2 Ultra (24-core CPU)',
@@ -522,7 +421,7 @@ const users = [
         price: 1299,
         category: 'Desktops',
         image: images.macMiniM2Pro || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple M2 Pro (12-core CPU)',
@@ -542,11 +441,11 @@ const users = [
     },
     {
         name: 'iMac 24" M3',
-        description: 'The all-in-one that does it all. The 24-inch iMac combines the power of M3 chip with a stunning 4.5K Retina display in a remarkably thin design. Available in seven vibrant colors, it brings personality to any workspace. The 1080p FaceTime HD camera, studio-quality mics, and six-speaker sound system make it perfect for video calls and content creation. Touch ID provides secure authentication for purchases and password entry.',
+        description: 'The all-in-one that does it all. The 24-inch iMac combines the power of M3 chip with a stunning 4.5K Retina display in a remarkably thin design. available in seven vibrant colors, it brings personality to any workspace. The 1080p FaceTime HD camera, studio-quality mics, and six-speaker sound system make it perfect for video calls and content creation. Touch ID provides secure authentication for purchases and password entry.',
         price: 1299,
         category: 'Desktops',
         image: images.iMac24M3 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple M3 (8-core CPU)',
@@ -571,7 +470,7 @@ const users = [
         price: 1299,
         category: 'Desktops',
         image: images.dellOptiPlex7010 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i7-13700 (16-core, up to 5.2GHz)',
@@ -595,7 +494,7 @@ const users = [
         price: 4299,
         category: 'Desktops',
         image: images.hpZ4G5 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Xeon W5-2455X (12-core, up to 4.6GHz)',
@@ -619,7 +518,7 @@ const users = [
         price: 1899,
         category: 'Desktops',
         image: images.hpZ2TowerG9 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i7-13700 (16-core, up to 5.2GHz)',
@@ -643,7 +542,7 @@ const users = [
         price: 899,
         category: 'Desktops',
         image: images.lenovoThinkCentreM90q || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i7-13700T (16-core, up to 4.8GHz, 35W)',
@@ -667,7 +566,7 @@ const users = [
         price: 2199,
         category: 'Desktops',
         image: images.lenovoThinkStationP360 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i9-12900 (16-core, up to 5.1GHz)',
@@ -693,7 +592,7 @@ const users = [
         price: 799,
         category: 'Monitors',
         image: images.dellUltraSharp27 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             screenSize: '27 inches',
@@ -718,7 +617,7 @@ const users = [
         price: 999,
         category: 'Monitors',
         image: images.dellUltraSharp32 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             screenSize: '31.5 inches',
@@ -743,7 +642,7 @@ const users = [
         price: 599,
         category: 'Monitors',
         image: images.lgUltraWide34 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             screenSize: '34 inches',
@@ -768,7 +667,7 @@ const users = [
         price: 799,
         category: 'Monitors',
         image: images.lg27GP950B || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             screenSize: '27 inches',
@@ -793,7 +692,7 @@ const users = [
         price: 699,
         category: 'Monitors',
         image: images.samsungViewFinity32 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             screenSize: '32 inches',
@@ -818,7 +717,7 @@ const users = [
         price: 1299,
         category: 'Monitors',
         image: images.samsungOdysseyG9 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             screenSize: '49 inches',
@@ -843,7 +742,7 @@ const users = [
         price: 249,
         category: 'Monitors',
         image: images.dellP2422H || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             screenSize: '23.8 inches',
@@ -868,7 +767,7 @@ const users = [
         price: 899,
         category: 'Monitors',
         image: images.asusProArt27 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             screenSize: '27 inches',
@@ -895,7 +794,7 @@ const users = [
         price: 12999,
         category: 'Servers',
         image: images.dellPowerEdgeR750 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: '2x Intel Xeon Gold 5418Y (24-core each)',
@@ -918,7 +817,7 @@ const users = [
         price: 2999,
         category: 'Servers',
         image: images.dellPowerEdgeR350 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Xeon E-2378 (8-core, up to 4.8GHz)',
@@ -941,7 +840,7 @@ const users = [
         price: 9499,
         category: 'Servers',
         image: images.hpeProLiantDL380 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Xeon Silver 4410Y (12-core)',
@@ -964,7 +863,7 @@ const users = [
         price: 6499,
         category: 'Servers',
         image: images.hpeProLiantML350 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Xeon Silver 4410T (10-core)',
@@ -987,7 +886,7 @@ const users = [
         price: 2499,
         category: 'Servers',
         image: images.synologyRS1221 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'AMD Ryzen V1500B (4-core, 2.2GHz)',
@@ -1013,7 +912,7 @@ const users = [
         price: 1199,
         category: 'Mobile',
         image: images.iPhone15ProMax || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple A17 Pro (3nm, 6-core CPU)',
@@ -1037,7 +936,7 @@ const users = [
         price: 999,
         category: 'Mobile',
         image: images.iPhone15Pro || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple A17 Pro (3nm, 6-core CPU)',
@@ -1061,7 +960,7 @@ const users = [
         price: 799,
         category: 'Mobile',
         image: images.iPhone15 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple A16 Bionic (5nm, 6-core CPU)',
@@ -1085,7 +984,7 @@ const users = [
         price: 1299,
         category: 'Mobile',
         image: images.samsungS24Ultra || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Snapdragon 8 Gen 3 for Galaxy',
@@ -1109,7 +1008,7 @@ const users = [
         price: 999,
         category: 'Mobile',
         image: images.samsungS24Plus || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Snapdragon 8 Gen 3 for Galaxy',
@@ -1133,7 +1032,7 @@ const users = [
         price: 1799,
         category: 'Mobile',
         image: images.samsungZFold5 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Snapdragon 8 Gen 2 for Galaxy',
@@ -1158,7 +1057,7 @@ const users = [
         price: 999,
         category: 'Mobile',
         image: images.pixel8Pro || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Google Tensor G3',
@@ -1183,7 +1082,7 @@ const users = [
         price: 699,
         category: 'Mobile',
         image: images.pixel8 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Google Tensor G3',
@@ -1210,7 +1109,7 @@ const users = [
         price: 1299,
         category: 'Tablets',
         image: images.iPadPro129M4 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple M4 (9-core CPU, 10-core GPU)',
@@ -1235,7 +1134,7 @@ const users = [
         price: 999,
         category: 'Tablets',
         image: images.iPadPro11M4 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple M4 (9-core CPU, 10-core GPU)',
@@ -1260,7 +1159,7 @@ const users = [
         price: 799,
         category: 'Tablets',
         image: images.iPadAir13M2 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Apple M2 (8-core CPU, 10-core GPU)',
@@ -1285,7 +1184,7 @@ const users = [
         price: 1199,
         category: 'Tablets',
         image: images.galaxyTabS9Ultra || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Snapdragon 8 Gen 2 for Galaxy',
@@ -1309,7 +1208,7 @@ const users = [
         price: 999,
         category: 'Tablets',
         image: images.galaxyTabS9Plus || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Snapdragon 8 Gen 2 for Galaxy',
@@ -1333,7 +1232,7 @@ const users = [
         price: 1599,
         category: 'Tablets',
         image: images.surfacePro9 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'Intel Core i7-1255U (10-core)',
@@ -1359,7 +1258,7 @@ const users = [
         price: 8999,
         category: 'Networking',
         image: images.ciscoCatalyst9300 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             ports: '48x 10/100/1000 PoE+',
@@ -1383,7 +1282,7 @@ const users = [
         price: 6499,
         category: 'Networking',
         image: images.ciscoMerakiMS250 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             ports: '48x 1GbE RJ-45',
@@ -1407,7 +1306,7 @@ const users = [
         price: 499,
         category: 'Networking',
         image: images.ubiquitiUDMPro || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             processor: 'ARM Cortex-A57 Quad-Core 1.7GHz',
@@ -1431,7 +1330,7 @@ const users = [
         price: 1199,
         category: 'Networking',
         image: images.ubiquitiSwitchPro48 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             ports: '48x 1GbE PoE++ RJ-45',
@@ -1455,7 +1354,7 @@ const users = [
         price: 1299,
         category: 'Networking',
         image: images.arubaAP635 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             wifi: 'Wi-Fi 6E (802.11ax)',
@@ -1479,7 +1378,7 @@ const users = [
         price: 699,
         category: 'Networking',
         image: images.fortigate60F || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             throughput: '10 Gbps firewall, 700 Mbps IPS, 700 Mbps NGFW',
@@ -1504,7 +1403,7 @@ const users = [
         price: 199,
         category: 'Accessories',
         image: images.magicKeyboard || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             type: 'Wireless keyboard with numeric keypad',
@@ -1527,7 +1426,7 @@ const users = [
         price: 99,
         category: 'Accessories',
         image: images.magicMouse || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             type: 'Wireless mouse with Multi-Touch',
@@ -1550,7 +1449,7 @@ const users = [
         price: 149,
         category: 'Accessories',
         image: images.magicTrackpad || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             type: 'Wireless trackpad with Force Touch',
@@ -1573,7 +1472,7 @@ const users = [
         price: 99,
         category: 'Accessories',
         image: images.mxMaster3S || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             type: 'Wireless ergonomic mouse',
@@ -1596,7 +1495,7 @@ const users = [
         price: 109,
         category: 'Accessories',
         image: images.mxKeysS || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             type: 'Wireless illuminated keyboard',
@@ -1619,7 +1518,7 @@ const users = [
         price: 399,
         category: 'Accessories',
         image: images.sonyWH1000XM5 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             type: 'Wireless over-ear headphones',
@@ -1642,7 +1541,7 @@ const users = [
         price: 249,
         category: 'Accessories',
         image: images.airPodsPro2 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             type: 'Wireless earbuds with ANC',
@@ -1666,7 +1565,7 @@ const users = [
         price: 399,
         category: 'Accessories',
         image: images.caldigitTS4 || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             type: 'Thunderbolt 4 Docking Station',
@@ -1689,7 +1588,7 @@ const users = [
         price: 349,
         category: 'Accessories',
         image: images.belkinThunderbolt4Dock || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             type: 'Thunderbolt 4 Docking Station',
@@ -1712,7 +1611,7 @@ const users = [
         price: 199,
         category: 'Accessories',
         image: images.samsungT7Shield || PLACEHOLDER_IMAGE,
-        status: 'Available',
+        status: 'available',
         condition: 'New',
         specifications: {
             type: 'Portable SSD',
@@ -1733,10 +1632,7 @@ const users = [
     },
 ];
 
-
-
-        console.log('Seeding tickets and licenses...');
-        const licenses = [
+const licenses = [
     {
         softwareName: 'Microsoft 365 E5',
         provider: 'Microsoft',
@@ -1758,116 +1654,6 @@ const users = [
         type: 'Subscription',
         licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-ADOBE',
         assignedToDept: 'Marketing',
-    },
-    {
-        softwareName: 'Slack Business+',
-        provider: 'Salesforce',
-        seatsTotal: 150,
-        seatsUsed: 142,
-        costPerSeat: 15,
-        expiryDate: new Date('2025-06-30'),
-        type: 'Subscription',
-        licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-SLACK',
-        assignedToDept: 'General',
-    },
-    {
-        softwareName: 'Zoom Business',
-        provider: 'Zoom',
-        seatsTotal: 50,
-        seatsUsed: 45,
-        costPerSeat: 19.99,
-        expiryDate: new Date('2025-09-30'),
-        type: 'Subscription',
-        licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-ZOOM',
-        assignedToDept: 'General',
-    },
-    {
-        softwareName: 'JetBrains All Products Pack',
-        provider: 'JetBrains',
-        seatsTotal: 30,
-        seatsUsed: 28,
-        costPerSeat: 64.90,
-        expiryDate: new Date('2025-07-15'),
-        type: 'Subscription',
-        licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-JETB',
-        assignedToDept: 'Engineering',
-    },
-    {
-        softwareName: 'AutoCAD 2024',
-        provider: 'Autodesk',
-        seatsTotal: 10,
-        seatsUsed: 8,
-        costPerSeat: 235,
-        expiryDate: new Date('2025-11-30'),
-        type: 'Subscription',
-        licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-ACAD',
-        assignedToDept: 'Engineering',
-    },
-    {
-        softwareName: 'VMware vSphere Enterprise Plus',
-        provider: 'VMware',
-        seatsTotal: 5,
-        seatsUsed: 5,
-        costPerSeat: 4250,
-        expiryDate: new Date('2026-03-15'),
-        type: 'Perpetual',
-        licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-VMWARE',
-        assignedToDept: 'Engineering',
-    },
-    {
-        softwareName: 'Figma Organization',
-        provider: 'Figma',
-        seatsTotal: 20,
-        seatsUsed: 18,
-        costPerSeat: 45,
-        expiryDate: new Date('2025-10-31'),
-        type: 'Subscription',
-        licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-FIGMA',
-        assignedToDept: 'Marketing',
-    },
-    {
-        softwareName: 'GitHub Enterprise',
-        provider: 'Microsoft',
-        seatsTotal: 50,
-        seatsUsed: 42,
-        costPerSeat: 21,
-        expiryDate: new Date('2025-09-15'),
-        type: 'Subscription',
-        licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-GHENT',
-        assignedToDept: 'Engineering',
-    },
-    {
-        softwareName: 'Salesforce CRM',
-        provider: 'Salesforce',
-        seatsTotal: 35,
-        seatsUsed: 30,
-        costPerSeat: 150,
-        expiryDate: new Date('2025-12-01'),
-        type: 'Subscription',
-        licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-SFCRM',
-        assignedToDept: 'Sales',
-    },
-    {
-        softwareName: 'Workday HCM',
-        provider: 'Workday',
-        seatsTotal: 100,
-        seatsUsed: 85,
-        costPerSeat: 45,
-        expiryDate: new Date('2025-11-01'),
-        type: 'Subscription',
-        licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-WDAY',
-        assignedToDept: 'HR',
-    },
-    {
-        softwareName: 'Tableau Desktop',
-        provider: 'Salesforce',
-        seatsTotal: 15,
-        seatsUsed: 12,
-        costPerSeat: 70,
-        expiryDate: new Date('2025-08-01'),
-        type: 'Subscription',
-        licenseKey: 'XXXXX-XXXXX-XXXXX-XXXXX-TABL',
-        assignedToDept: 'Sales',
     },
 ];
 
@@ -1900,252 +1686,166 @@ const seedDatabase = async () => {
     try {
         await connectDB();
 
+        console.log('Cleaning database');
         await User.deleteMany({});
         await Asset.deleteMany({});
         await Ticket.deleteMany({});
         await License.deleteMany({});
+        await AuditLog.deleteMany({});
 
-        console.log('\n👥 Creating users...');
+        console.log('Creating users');
         const createdUsers = [];
         for (const userData of users) {
-
             const user = await User.create(userData);
             createdUsers.push(user);
-            console.log(` Created: ${user.email} (${user.role})`);
         }
+        console.log(`   -> Created ${createdUsers.length} users.`);
 
         const usersByRole = {
             admins: createdUsers.filter(u => u.role === 'admin'),
-            warehouseManagers: createdUsers.filter(u => u.role === 'warehouse_manager'),
+            managers: createdUsers.filter(u => u.role === 'manager'),
             auditors: createdUsers.filter(u => u.role === 'auditor'),
             employees: createdUsers.filter(u => u.role === 'employee'),
         };
 
-        console.log('\n Users by Role:');
-        console.log(`      • Admins: ${usersByRole.admins.length}`);
-        console.log(`      • Warehouse Managers: ${usersByRole.warehouseManagers.length}`);
-        console.log(`      • Auditors: ${usersByRole.auditors.length}`);
-        console.log(`      • Employees: ${usersByRole.employees.length}`);
-
-        console.log('\n Creating assets...');
+        console.log('Creating and Normalizing Assets');
         const categoryCounters = {};
         const createdAssets = [];
 
-        for (let i = 0; i < assets.length; i++) {
-            const assetData = assets[i];
+        for (let i = 0; i < rawAssets.length; i++) {
+            const assetData = rawAssets[i];
+
             categoryCounters[assetData.category] = (categoryCounters[assetData.category] || 0) + 1;
 
-            const assetTag = generateAssetTag(assetData.category, categoryCounters[assetData.category]);
-            const serialNumber = generateSerialNumber(assetData.category, i);
+            const assetTag = assetData.assetTag || generateAssetTag(assetData.category, categoryCounters[assetData.category]);
+            const serialNumber = assetData.serialNumber || generateSerialNumber(assetData.category, i);
 
+            let status = (assetData.status || 'available').toLowerCase();
+            if (status === 'in stock') status = 'available';
+            else if (status === 'allocated') status = 'assigned';
 
-            let status = assetData.status;
-            let condition = assetData.condition;
+            const purchasePrice = assetData.purchasePrice || assetData.price || 0;
+
+            let condition = assetData.condition || 'New';
             let assignedTo = null;
+
             let history = [{
                 action: 'Created',
-                date: assetData.purchaseDate,
+                date: assetData.purchaseDate || new Date(),
                 user: 'System',
                 details: `Asset ${assetTag} added to inventory`,
             }];
 
-
             if (['Laptops', 'Desktops', 'Mobile', 'Tablets'].includes(assetData.category)) {
                 const categoryIndex = categoryCounters[assetData.category];
 
-                if (categoryIndex % 5 === 1) {
+                if (categoryIndex % 5 === 1 && usersByRole.employees.length > 0) {
                     const employeeIndex = categoryIndex % usersByRole.employees.length;
                     assignedTo = usersByRole.employees[employeeIndex]._id;
-                    status = 'Assigned';
+                    status = 'assigned';
                     condition = 'Excellent';
                     history.push({
-                        action: 'Assigned',
-                        date: new Date(assetData.purchaseDate.getTime() + 7 * 24 * 60 * 60 * 1000),
+                        action: 'assigned',
+                        date: new Date(),
                         user: 'Admin',
-                        details: `Assigned to ${usersByRole.employees[employeeIndex].name}`,
+                        details: `assigned to ${usersByRole.employees[employeeIndex].name}`,
                     });
                 } else if (categoryIndex % 5 === 2) {
-                    status = 'Maintenance';
+                    status = 'maintenance';
                     condition = 'Fair';
                     history.push({
-                        action: 'Maintenance',
+                        action: 'maintenance',
                         date: new Date(),
                         user: 'System',
                         details: 'Scheduled maintenance - battery replacement',
                     });
-                } else if (categoryIndex % 5 === 3 && categoryIndex > 3) {
-                    status = 'Retired';
-                    condition = 'Damaged';
-                    history.push({
-                        action: 'Retired',
-                        date: new Date(),
-                        user: 'Admin',
-                        details: 'End of useful life - replaced with newer model',
-                    });
-                } else if (categoryIndex % 7 === 0) {
-                     Lost (rare)
-                    status = 'Lost';
-                    condition = 'Good';
-                    history.push({
-                        action: 'Lost',
-                        date: new Date(),
-                        user: 'System',
-                        details: 'Reported lost by employee during travel',
-                    });
                 }
-            }
-            if (assetData.category === 'Accessories' && categoryCounters['Accessories'] % 4 === 0) {
-                condition = 'Good';
             }
 
             const asset = await Asset.create({
-                ...assetData,
-                assetTag,
-                serialNumber,
-                status,
-                condition,
-                assignedTo,
-                history,
+                name: assetData.name,
+                description: assetData.description,
+                image: assetData.image,
+                category: assetData.category,
+                purchasePrice: purchasePrice,
+                status: status,
+                assetTag: assetTag,
+                serialNumber: serialNumber,
+                condition: condition,
+                assignedTo: assignedTo,
+                location: assetData.location || 'Warehouse',
+                purchaseDate: assetData.purchaseDate || new Date(),
+                history: history,
+                isFeatured: assetData.isFeatured || false
             });
             createdAssets.push(asset);
         }
+        console.log(`   -> Created ${createdAssets.length} assets.`);
 
-		const assignedAssets = createdAssets.filter(a => a.status === 'Assigned');
-        const maintenanceAssets = createdAssets.filter(a => a.status === 'Maintenance');
-        const availableAssets = createdAssets.filter(a => a.status === 'Available');
+        const assignedAssets = createdAssets.filter(a => a.status === 'assigned');
+        const availableAssets = createdAssets.filter(a => a.status === 'available');
 
-        const statusCounts = createdAssets.reduce((acc, asset) => {
-        acc[asset.status] = (acc[asset.status] || 0) + 1;
-        return acc;
-    }, {});
-
-        console.log('\nAssets by Category:');
-        Object.entries(categoryCounters).forEach(([category, count]) => {
-            console.log(`      • ${category}: ${count}`);
-        });
-
-        console.log('\n Assets by Status:');
-        Object.entries(statusCounts).forEach(([status, count]) => {
-            console.log(`      • ${status}: ${count}`);
-        });
-
-        console.log('\n Creating software licenses...');
+        console.log('Creating software licenses');
         for (const licenseData of licenses) {
-            const license = await License.create(licenseData);
-            console.log(`Created: ${license.softwareName} (${license.assignedToDept})`);
+            await License.create(licenseData);
         }
+        console.log(`   -> Created ${licenses.length} licenses.`);
 
-        console.log('\n Creating support tickets...');
-
+        console.log('Creating support tickets');
         const sampleTickets = [
-            { title: 'Laptop screen flickering intermittently', description: 'My Dell XPS laptop screen has been flickering randomly...', priority: 'High', category: 'Hardware Issue', status: 'Open' },
-            { title: 'Cannot connect to VPN from home', description: 'Getting "Connection timed out" error...', priority: 'Critical', category: 'Software Issue', status: 'In Progress' },
-            { title: 'Request for additional monitor', description: 'I would like to request a second monitor...', priority: 'Low', category: 'Upgrade Request', status: 'Open' },
-            { title: 'Email not syncing on mobile device', description: 'Outlook app on my iPhone stopped syncing...', priority: 'Medium', category: 'Software Issue', status: 'Resolved' },
-            { title: 'Keyboard keys sticking', description: 'Several keys on my mechanical keyboard are sticking...', priority: 'Medium', category: 'Hardware Issue', status: 'Open' },
-            { title: 'Slow network speeds in conference room B', description: 'Wi-Fi connection in Conference Room B is extremely slow...', priority: 'High', category: 'General Inquiry', status: 'In Progress' },
-            { title: 'Software license renewal needed', description: 'Our Adobe Creative Cloud licenses are expiring next month...', priority: 'Medium', category: 'Software Issue', status: 'Open' },
-            { title: 'MacBook battery draining quickly', description: 'Battery life has dropped significantly...', priority: 'High', category: 'Hardware Issue', status: 'In Progress' },
-            { title: 'Printer not connecting to network', description: 'The shared printer on floor 3 is showing offline status...', priority: 'Medium', category: 'Other', status: 'Resolved' },
-            { title: 'Need access to Salesforce CRM', description: 'Starting in the Sales department next week...', priority: 'Medium', category: 'General Inquiry', status: 'Closed' }
+            { title: 'Laptop screen flickering', description: 'Screen flickering intermittently...', priority: 'High', category: 'Hardware Issue', status: 'Open' },
+            { title: 'VPN connection failed', description: 'Connection timed out error...', priority: 'Critical', category: 'Software Issue', status: 'In Progress' },
+            { title: 'Monitor request', description: 'Need second monitor for dev work...', priority: 'Low', category: 'Upgrade Request', status: 'Open' },
+            { title: 'Outlook not syncing', description: 'Emails not updating on mobile...', priority: 'Medium', category: 'Software Issue', status: 'Resolved' },
         ];
 
-        const allUsableAssets = [...assignedAssets, ...maintenanceAssets, ...availableAssets.slice(0, 10)];
+        const ticketAssets = [...assignedAssets, ...availableAssets];
 
-        for (let i = 0; i < sampleTickets.length; i++) {
-            const ticketData = sampleTickets[i];
+        if (ticketAssets.length > 0 && usersByRole.employees.length > 0) {
+            for (let i = 0; i < sampleTickets.length; i++) {
+                const ticketData = sampleTickets[i];
+                const user = usersByRole.employees[i % usersByRole.employees.length];
+                const asset = ticketAssets[i % ticketAssets.length];
 
-            const user = usersByRole.employees[i % usersByRole.employees.length];
-            const asset = allUsableAssets[i % allUsableAssets.length];
-
-            await Ticket.create({
-                ...ticketData,
-                ticketNumber: `TKT-2026-${1000 + i}`,
-                user: user._id,
-                asset: asset._id,
-                adminNotes: ticketData.status === 'Resolved'
-                    ? 'Issue resolved - hardware verified by IT.'
-                    : ticketData.status === 'Closed'
-                        ? 'Request completed and verified.'
-                        : '',
-            });
-            console.log(` Created: ${ticketData.title.substring(0, 40)}... (${ticketData.status})`);
+                await Ticket.create({
+                    ...ticketData,
+                    ticketNumber: `TKT-2026-${1000 + i}`,
+                    user: user._id,
+                    asset: asset._id,
+                    adminNotes: ticketData.status === 'Resolved' ? 'Verified by IT.' : '',
+                });
+            }
+            console.log(`   -> Created ${sampleTickets.length} tickets.`);
         }
 
-        console.log('\n Creating audit log entries...');
-
+        console.log('Creating audit log entries');
         const sampleAuditLogs = [
             {
                 userId: usersByRole.admins[0]._id,
                 action: 'LOGIN_SUCCESS',
                 resource: 'auth',
                 ipAddress: '192.168.1.100',
-                userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
                 status: 'SUCCESS',
             },
             {
-                userId: usersByRole.employees[0]._id,
-                action: 'LOGIN_SUCCESS',
-                resource: 'auth',
-                ipAddress: '192.168.1.105',
-                userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                status: 'SUCCESS',
-            },
-            {
-                userId: usersByRole.warehouseManagers[0]._id,
+                userId: usersByRole.managers[0]._id,
                 action: 'CREATE',
                 resource: 'asset',
-                resourceId: (createdAssets[0]?._id || "N/A").toString(),
                 ipAddress: '192.168.1.102',
                 status: 'SUCCESS',
-                changes: {
-                    after: { name: createdAssets[0].name, status: 'Available' },
-                },
-            },
-            {
-                userId: usersByRole.admins[0]._id,
-                action: 'UPDATE',
-                resource: 'asset',
-                resourceId: (assignedAssets[0]?._id || createdAssets[0]?._id || "N/A").toString(),
-                ipAddress: '192.168.1.100',
-                status: 'SUCCESS',
-                changes: {
-                    before: { status: 'Available' },
-                    after: { status: 'Assigned' },
-                },
-            },
-            {
-                userId: usersByRole.employees[1]._id,
-                action: 'LOGIN_FAILED',
-                resource: 'auth',
-                ipAddress: '192.168.1.110',
-                status: 'FAILURE',
-                errorMessage: 'Invalid password',
-            },
-            {
-                userId: usersByRole.auditors[0]._id,
-                action: 'READ',
-                resource: 'audit_log',
-                ipAddress: '192.168.1.115',
-                status: 'SUCCESS',
-            },
+                details: 'Bulk import of assets'
+            }
         ];
 
         for (const logData of sampleAuditLogs) {
-            try {
-                await AuditLog.create(logData);
-                console.log(` Created audit log: ${logData.action} on ${logData.resource}`);
-            } catch (error) {
-                console.log(` Skipped audit log: ${logData.action} (${error.message})`);
-            }
+            await AuditLog.create(logData);
         }
-        console.log(`Users Created: ${createdUsers.length}`);
-        console.log(`Assets Created: ${createdAssets.length}`);
-        console.log(`Licenses Created: ${licenses.length}`);
+        console.log(`   -> Created ${sampleAuditLogs.length} audit logs.`);
 
+        console.log('Seed Data Imported Successfully');
         process.exit(0);
     } catch (error) {
-        console.error('Seeding failed:', error);
+        console.error('Seeding Failed:', error);
         process.exit(1);
     }
 };

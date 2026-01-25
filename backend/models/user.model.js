@@ -19,81 +19,39 @@ const userSchema = new mongoose.Schema(
             required: [true, "Password is required"],
             minlength: [6, "Password must be at least 6 characters long"],
         },
-        selectedItems: [
-            {
-                quantity: {
-                    type: Number,
-                    default: 1,
-                },
-                product: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: "Asset",
-                },
-            },
-        ],
         role: {
             type: String,
-            enum: ["employee", "admin", "warehouse_manager", "auditor"],
+            enum: ["employee", "admin", "manager", "auditor"],
             default: "employee",
         },
         department: {
             type: String,
-            enum: ["Engineering", "Sales", "Marketing", "HR", "Operations", "Executive", "General"],
             default: "General"
         },
-        phone: {
-            type: String,
-            default: ""
-        },
-        twoFactorSecret: {
-            type: String,
-            default: null,
-        },
-        twoFactorEnabled: {
-            type: Boolean,
-            default: false,
-        },
+
+
+        twoFactorSecret: { type: String, default: null },
+        twoFactorEnabled: { type: Boolean, default: false },
         twoFactorBackupCodes: [{
             code: String,
-            used: {
-                type: Boolean,
-                default: false
-            }
+            used: { type: Boolean, default: false }
         }],
 
-        passwordResetToken: {
-            type: String,
-            default: null,
-        },
-        passwordResetExpires: {
-            type: Date,
-            default: null,
-        },
+        passwordResetToken: { type: String, default: null },
+        passwordResetExpires: { type: Date, default: null },
 
-        lastLoginAt: {
-            type: Date,
-            default: Date.now
-        },
-        lastLoginIp: {
-            type: String,
-            default: ""
-        },
-        failedLoginAttempts: {
-            type: Number,
-            default: 0
-        },
-        accountLockedUntil: {
-            type: Date,
-            default: null
-        }
+        lastLoginAt: { type: Date, default: Date.now },
+        lastLoginIp: { type: String, default: "" },
+        failedLoginAttempts: { type: Number, default: 0 },
+        accountLockedUntil: { type: Date, default: null }
     },
     {
         timestamps: true,
     }
 );
+
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next();
-
     try {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
@@ -102,13 +60,14 @@ userSchema.pre("save", async function (next) {
         next(error);
     }
 });
+
 userSchema.methods.comparePassword = async function (password) {
     return bcrypt.compare(password, this.password);
 };
+
 userSchema.methods.isLocked = function () {
     return this.accountLockedUntil && this.accountLockedUntil > new Date();
 };
 
 const User = mongoose.model("User", userSchema);
-
 export default User;

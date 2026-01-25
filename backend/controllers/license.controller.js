@@ -1,28 +1,23 @@
 import License from "../models/license.model.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
 
-export const getAllLicenses = async (req, res) => {
-    try {
-        const licenses = await License.find().sort({ expiryDate: 1 });
-        res.json(licenses);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
+export const getAllLicenses = asyncHandler(async (req, res) => {
+    const licenses = await License.find().sort({ expiryDate: 1 });
+    res.json(licenses);
+});
 
-export const createLicense = async (req, res) => {
-    try {
-        const license = await License.create(req.body);
-        res.status(201).json(license);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
+export const createLicense = asyncHandler(async (req, res) => {
+    const license = await License.create(req.body);
+    res.status(201).json(license);
+});
 
-export const deleteLicense = async (req, res) => {
-    try {
-        await License.findByIdAndDelete(req.params.id);
-        res.json({ message: "License removed" });
-    } catch (error) {
-        res.status(500).json({ message: "Server error" });
+export const deleteLicense = asyncHandler(async (req, res) => {
+    const license = await License.findByIdAndDelete(req.params.id);
+
+    if (!license) {
+        res.status(404);
+        throw new Error("License not found");
     }
-};
+
+    res.json({ message: "License removed" });
+});

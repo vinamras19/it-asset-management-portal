@@ -1,5 +1,6 @@
 import express from "express";
 import { protectRoute } from "../middleware/auth.middleware.js";
+
 import {
     generate2FASecret,
     verify2FASetup,

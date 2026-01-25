@@ -25,7 +25,6 @@ const ticketSchema = new mongoose.Schema(
         asset: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Asset",
-            required: true,
         },
         title: {
             type: String,

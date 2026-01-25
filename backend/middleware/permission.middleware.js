@@ -1,3 +1,11 @@
+/**
+ * TODO: Replace adminRoute checks with granular permissions
+ *
+ * - checkPermission: resource + action based access
+ * - checkOwnership: users can only edit their own stuff
+ * - restrictTo: role whitelist for sensitive routes
+ */
+
 import { hasPermission } from '../config/permissions.js';
 
 export const checkPermission = (resource, action) => {

@@ -2,6 +2,8 @@ import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { redis } from "../lib/redis.js";
 import User from "../models/user.model.js";
 import { createAuditLog } from "./audit.controller.js";
 
@@ -95,11 +97,12 @@ export const verify2FASetup = async (req, res) => {
 export const verify2FALogin = async (req, res) => {
     try {
         const { userId, token } = req.body;
-
         const user = await User.findById(userId);
+
         if (!user || !user.twoFactorEnabled) {
             return res.status(400).json({ message: "Invalid request" });
         }
+
         const verified = speakeasy.totp.verify({
             secret: user.twoFactorSecret,
             encoding: "base32",
@@ -108,19 +111,61 @@ export const verify2FALogin = async (req, res) => {
         });
 
         if (verified) {
+
+            const accessToken = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+            const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+
+            await redis.set(`refresh_token:${user._id}`, refreshToken, "EX", 7 * 24 * 60 * 60);
+
+            res.cookie("accessToken", accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 15 * 60 * 1000,
+            });
+
+            res.cookie("refreshToken", refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+            });
+
             return res.json({
                 verified: true,
-                message: "2FA verification successful"
+                message: "2FA verification successful",
+                user: { _id: user._id, name: user.name, email: user.email, role: user.role }
             });
         }
+
         const backupCodeUsed = await verifyBackupCode(user, token);
-        if (backupCodeUsed) {
-            return res.json({
-                verified: true,
-                message: "Backup code used successfully",
-                warning: "You have used a backup code. Consider generating new ones.",
-            });
-        }
+                if (backupCodeUsed) {
+                    const accessToken = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+                    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+
+                    await redis.set(`refresh_token:${user._id}`, refreshToken, "EX", 7 * 24 * 60 * 60);
+
+                    res.cookie("accessToken", accessToken, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === "production",
+                        sameSite: "strict",
+                        maxAge: 15 * 60 * 1000,
+                    });
+
+                    res.cookie("refreshToken", refreshToken, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === "production",
+                        sameSite: "strict",
+                        maxAge: 7 * 24 * 60 * 60 * 1000,
+                    });
+
+                    return res.json({
+                        verified: true,
+                        message: "Backup code used successfully",
+                        warning: "You have used a backup code. Consider generating new ones.",
+                        user: { _id: user._id, name: user.name, email: user.email, role: user.role }
+                    });
+                }
 
         res.status(400).json({
             verified: false,

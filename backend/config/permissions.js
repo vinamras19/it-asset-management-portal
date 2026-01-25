@@ -1,7 +1,6 @@
 export const rolePermissions = {
     employee: {
         assets: ['read'],
-        selection: ['create', 'read', 'update', 'delete'],
         requests: ['create', 'read'],
         profile: ['read', 'update'],
         tickets: ['create', 'read']
@@ -26,7 +25,6 @@ export const rolePermissions = {
         requests: ['create', 'read', 'update', 'delete'],
         users: ['create', 'read', 'update', 'delete'],
         analytics: ['read'],
-        selection: ['read', 'delete'],
         profile: ['read', 'update', 'delete'],
         audit_logs: ['read'],
         tickets: ['create', 'read', 'update', 'delete'],

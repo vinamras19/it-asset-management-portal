@@ -1,92 +1,65 @@
 import AuditLog from "../models/auditLog.model.js";
-export const createAuditLog = async ({
-    userId,
-    action,
-    resource = 'User',
-    resourceId = null,
-    changes = null,
-    ipAddress = 'unknown',
-    userAgent = null,
-    status = 'SUCCESS',
-    errorMessage = null,
-    metadata = null
-}) => {
+import User from "../models/user.model.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
+
+export const createAuditLog = async (logData) => {
     try {
-        const log = new AuditLog({
-            userId,
-            action,
-            resource,
-            resourceId,
-            changes,
-            ipAddress,
-            userAgent,
-            status,
-            errorMessage,
-            metadata
-        });
-        await log.save();
-        return log;
+        await AuditLog.create(logData);
     } catch (error) {
-        console.error('Error creating audit log:', error);
-        return null;
+
+        console.error("[Audit Failure] Could not write log:", error.message);
     }
 };
 
-export const getMyAuditLogs = async (req, res) => {
-    try {
-        const logs = await AuditLog.find({ userId: req.user._id })
-            .sort({ createdAt: -1 })
-            .limit(50);
+export const getMyAuditLogs = asyncHandler(async (req, res) => {
+    const logs = await AuditLog.find({ userId: req.user._id })
+        .sort({ createdAt: -1 })
+        .limit(50);
 
-        res.json(logs);
-    } catch (error) {
-        console.error('Error fetching audit logs:', error);
-        res.status(500).json({
-            message: "Failed to fetch audit logs",
-            error: error.message
-        });
-    }
-};
+    res.json(logs);
+});
 
-export const getSecurityMetrics = async (req, res) => {
-    try {
-        const User = (await import("../models/user.model.js")).default;
-        const totalUsers = await User.countDocuments();
-        const failedLogins24h = await AuditLog.countDocuments({
+export const getSecurityMetrics = asyncHandler(async (req, res) => {
+    // Parallel execution for performance
+    const [
+        totalUsers,
+        failedLogins24h,
+        lockedAccounts,
+        successfulLoginsToday,
+        signupsToday,
+        recentEvents
+    ] = await Promise.all([
+        User.countDocuments(),
+        AuditLog.countDocuments({
             action: 'LOGIN_FAILED',
-            createdAt: { $gte: new Date(Date.now() - 24*60*60*1000) }
-        });
-        const lockedAccounts = await User.countDocuments({
+            createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+        }),
+        User.countDocuments({
             accountLockedUntil: { $gt: new Date() }
-        });
-        const successfulLoginsToday = await AuditLog.countDocuments({
+        }),
+        AuditLog.countDocuments({
             action: 'LOGIN_SUCCESS',
-            createdAt: { $gte: new Date(new Date().setHours(0,0,0,0)) }
-        });
-        const signupsToday = await AuditLog.countDocuments({
+            createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+        }),
+        AuditLog.countDocuments({
             action: 'SIGNUP',
-            createdAt: { $gte: new Date(new Date().setHours(0,0,0,0)) }
-        });
-        const recentEvents = await AuditLog.find({
-            action: { $in: ['LOGIN_FAILED', 'ACCOUNT_LOCKED', 'PASSWORD_CHANGE', 'EMAIL_CHANGE'] }
+            createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+        }),
+        AuditLog.find({
+            action: { $in: ['LOGIN_FAILED', 'ACCOUNT_LOCKED', 'PASSWORD_CHANGE', 'EMAIL_CHANGE', 'SUSPICIOUS_ACTIVITY'] }
         })
-            .sort({ createdAt: -1 })
-            .limit(20)
-            .select('action userId ipAddress createdAt status');
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .populate('userId', 'name email')
+        .select('action userId ipAddress createdAt status')
+    ]);
 
-        res.json({
-            totalUsers,
-            failedLogins24h,
-            lockedAccounts,
-            successfulLoginsToday,
-            signupsToday,
-            recentEvents
-        });
-    } catch (error) {
-        console.error('Error fetching security metrics:', error);
-        res.status(500).json({
-            message: "Failed to fetch security metrics",
-            error: error.message
-        });
-    }
-};
+    res.json({
+        totalUsers,
+        failedLogins24h,
+        lockedAccounts,
+        successfulLoginsToday,
+        signupsToday,
+        recentEvents
+    });
+});

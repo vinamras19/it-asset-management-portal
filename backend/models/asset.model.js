@@ -4,11 +4,12 @@ import crypto from "crypto";
 const assetSchema = new mongoose.Schema(
     {
         name: { type: String, required: true },
-        description: { type: String, required: true },
-        price: { type: Number, min: 0, required: true },
-        image: { type: String, required: true },
+        description: { type: String, default: "" },
+
+        purchasePrice: { type: Number, min: 0, required: true },
+
+        image: { type: String, default: "" },
         category: { type: String, required: true },
-        isFeatured: { type: Boolean, default: false },
 
         assetTag: {
             type: String,
@@ -16,21 +17,27 @@ const assetSchema = new mongoose.Schema(
             default: () => `AST-${crypto.randomBytes(3).toString('hex').toUpperCase()}`
         },
 
-        serialNumber: { type: String, unique: true, sparse: true },
+        serialNumber: { type: String, unique: true, required: true },
+
         status: {
             type: String,
-            enum: ["Available", "Assigned", "Maintenance", "Retired", "Lost"],
-            default: "Available"
+            enum: ["available", "assigned", "maintenance", "retired", "lost"],
+            default: "available"
         },
+
         condition: {
             type: String,
             enum: ["New", "Excellent", "Good", "Fair", "Damaged"],
             default: "New"
         },
+
         assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
         purchaseDate: { type: Date, default: Date.now },
-        usefulLife: { type: Number, default: 4 }, // Years
-        co2Footprint: { type: Number, default: 0 },
+        usefulLife: { type: Number, default: 3 },
+
+        location: { type: String, default: "Main Office" },
+
+        isFeatured: { type: Boolean, default: false },
 
         history: [{
             action: String,
@@ -42,6 +49,9 @@ const assetSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+assetSchema.index({ category: 1 });
+assetSchema.index({ status: 1 });
+assetSchema.index({ assignedTo: 1 });
+assetSchema.index({ name: 'text', description: 'text', serialNumber: 'text' });
 const Asset = mongoose.model("Asset", assetSchema);
-
 export default Asset;

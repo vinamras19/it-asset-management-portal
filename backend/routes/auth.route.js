@@ -1,4 +1,5 @@
 import express from "express";
+
 import {
     signup,
     login,
@@ -13,24 +14,26 @@ import {
     forgotPassword,
     resetPassword
 } from "../controllers/auth.controller.js";
+
 import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
+import { authLimiter } from "../config/security.js";
+
 import {
     validateSignup,
     validateLogin,
     validateUpdateEmail,
     validateUpdatePassword
 } from "../middleware/validation.js";
-import { authLimiter, passwordResetLimiter } from "../middleware/rateLimit.middleware.js";
 
 const router = express.Router();
 
 // Public Routes
-router.post("/signup", authLimiter, validateSignup, signup);
-router.post("/login", authLimiter, validateLogin, login);
+router.post("/signup", validateSignup, signup);
+router.post("/login", validateLogin, login);
 router.post("/logout", logout);
 router.post("/refresh-token", refreshToken);
-router.post("/forgot-password", passwordResetLimiter, forgotPassword);
-router.post("/reset-password/:token", passwordResetLimiter, resetPassword);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 
 // Protected Routes
 router.get("/profile", protectRoute, getProfile);

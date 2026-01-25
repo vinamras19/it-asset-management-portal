@@ -4,7 +4,6 @@ const requestSchema = new mongoose.Schema(
     {
         requestNumber: {
             type: String,
-            required: true,
             unique: true,
         },
         user: {
@@ -87,14 +86,15 @@ const requestSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
-requestSchema.pre("save", async function (next) {
+requestSchema.pre("save", function (next) {
     if (!this.requestNumber) {
         const year = new Date().getFullYear();
-        const count = await mongoose.model("Request").countDocuments();
-        this.requestNumber = `REQ-${year}-${String(count + 1).padStart(4, "0")}`;
+        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+        this.requestNumber = `REQ-${year}-${Date.now().toString().slice(-4)}${random}`;
     }
     next();
 });
+
 requestSchema.index({ user: 1, status: 1 });
 requestSchema.index({ createdAt: -1 });
 

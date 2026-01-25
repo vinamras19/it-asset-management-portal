@@ -1,249 +1,151 @@
 import Ticket from "../models/ticket.model.js";
-import Product from "../models/asset.model.js";
-import { createAuditLog } from "./audit.controller.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
+import cloudinary from "../lib/cloudinary.js";
+
+export const getAllTickets = asyncHandler(async (req, res) => {
+    // Admin sees all, Employees see their own
+    const query = req.user.role === "admin" ? {} : { user: req.user._id };
+
+    const tickets = await Ticket.find(query)
+        .populate("user", "name email")
+        .populate("asset", "name assetTag")
+        .sort({ createdAt: -1 });
+
+    res.json(tickets);
+});
+
+export const getTicketById = asyncHandler(async (req, res) => {
+    const ticket = await Ticket.findById(req.params.id)
+        .populate("user", "name email")
+        .populate("asset", "name serialNumber")
+        .populate("comments.user", "name role");
+
+    if (!ticket) {
+        res.status(404);
+        throw new Error("Ticket not found");
+    }
+
+    // Access Control
+    if (req.user.role !== "admin" && ticket.user._id.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error("Not authorized");
+    }
+
+    res.json(ticket);
+});
+
+export const getTicketStats = asyncHandler(async (req, res) => {
+    const stats = await Ticket.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+    res.json(stats);
+});
+
+export const getUserTicketStats = asyncHandler(async (req, res) => {
+    const stats = await Ticket.aggregate([
+        { $match: { user: req.user._id } },
+        { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+    res.json(stats);
+});
+
 export const createTicket = async (req, res) => {
     try {
-        const { assetId, title, description, priority, category } = req.body;
-        const asset = await Product.findById(assetId);
-        if (!asset) {
-            return res.status(404).json({ message: "Asset not found" });
+        const { title, description, category, priority, assetId, image } = req.body;
+
+        // Validation: Logic for General Inquiry vs Hardware Issues
+        if (category !== "General Inquiry" && !assetId) {
+            return res.status(400).json({ message: "Asset is required for this ticket category" });
         }
+
+        let attachments = [];
+        if (image) {
+            try {
+                const result = await cloudinary.uploader.upload(image, { folder: "tickets" });
+                attachments.push({ url: result.secure_url, filename: "upload.jpg" });
+            } catch (imgError) {
+                console.error("Image upload failed, proceeding without image:", imgError);
+            }
+        }
+
+        const ticketNumber = `TKT-${Date.now().toString().slice(-6)}`;
+
         const ticket = await Ticket.create({
+            ticketNumber,
             user: req.user._id,
-            asset: assetId,
+            asset: assetId || undefined, // handles the optional model field
             title,
             description,
+            category,
             priority: priority || "Medium",
-            category: category || "Hardware Issue",
-            ticketNumber: `TKT-${Date.now().toString(36).toUpperCase()}`,
-        });
-        if (category === "Hardware Issue" || category === "Damage Report") {
-            await Product.findByIdAndUpdate(assetId, { status: "Maintenance" });
-        }
-        await createAuditLog({
-            userId: req.user._id,
-            action: "TICKET_CREATED",
-            resource: "Ticket",
-            resourceId: ticket._id,
-            metadata: { title, priority, assetId },
-            ipAddress: req.ip,
-            userAgent: req.get("User-Agent"),
-        });
-        const populated = await Ticket.findById(ticket._id)
-            .populate("user", "name email")
-            .populate("asset", "name assetTag image");
-
-        res.status(201).json(populated);
-    } catch (error) {
-        console.error("Create ticket error:", error);
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
-export const getAllTickets = async (req, res) => {
-    try {
-        const { status, priority, category, search } = req.query;
-        let query = {};
-        if (req.user.role !== "admin" && req.user.role !== "warehouse_manager") {
-            query.user = req.user._id;
-        }
-        if (status) query.status = status;
-        if (priority) query.priority = priority;
-        if (category) query.category = category;
-        if (search) {
-            query.$or = [
-                { title: { $regex: search, $options: "i" } },
-                { ticketNumber: { $regex: search, $options: "i" } },
-            ];
-        }
-
-        const tickets = await Ticket.find(query)
-            .populate("user", "name email department")
-            .populate("asset", "name assetTag image category")
-            .populate("assignedTo", "name email")
-            .populate("comments.user", "name")
-            .sort({ createdAt: -1 });
-
-        res.json(tickets);
-    } catch (error) {
-        console.error("Get tickets error:", error);
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
-export const getTicketById = async (req, res) => {
-    try {
-        const ticket = await Ticket.findById(req.params.id)
-            .populate("user", "name email department")
-            .populate("asset", "name assetTag image category serialNumber")
-            .populate("assignedTo", "name email")
-            .populate("comments.user", "name email");
-
-        if (!ticket) {
-            return res.status(404).json({ message: "Ticket not found" });
-        }
-        if (req.user.role !== "admin" && req.user.role !== "warehouse_manager") {
-            if (ticket.user._id.toString() !== req.user._id.toString()) {
-                return res.status(403).json({ message: "Not authorized" });
-            }
-        }
-
-        res.json(ticket);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
-export const updateTicketStatus = async (req, res) => {
-    try {
-        const { status, adminNotes, assignedTo, resolution } = req.body;
-
-        const ticket = await Ticket.findById(req.params.id);
-        if (!ticket) {
-            return res.status(404).json({ message: "Ticket not found" });
-        }
-
-        const oldStatus = ticket.status;
-        if (status) ticket.status = status;
-        if (adminNotes !== undefined) ticket.adminNotes = adminNotes;
-        if (assignedTo) ticket.assignedTo = assignedTo;
-        if (resolution) ticket.resolution = resolution;
-        if (status === "Resolved" && !ticket.resolvedAt) {
-            ticket.resolvedAt = new Date();
-        }
-        if (status === "Closed" && !ticket.closedAt) {
-            ticket.closedAt = new Date();
-        }
-
-        await ticket.save();
-        if (status === "Resolved" || status === "Closed") {
-            const asset = await Product.findById(ticket.asset);
-            if (asset && asset.status === "Maintenance") {
-                await Product.findByIdAndUpdate(ticket.asset, { status: "Available" });
-            }
-        }
-        await createAuditLog({
-            userId: req.user._id,
-            action: "TICKET_UPDATED",
-            resource: "Ticket",
-            resourceId: ticket._id,
-            changes: { from: oldStatus, to: status },
-            ipAddress: req.ip,
-            userAgent: req.get("User-Agent"),
+            attachments
         });
 
-        const populated = await Ticket.findById(ticket._id)
-            .populate("user", "name email")
-            .populate("asset", "name assetTag image")
-            .populate("assignedTo", "name email");
+        res.status(201).json(ticket);
 
-        res.json(populated);
     } catch (error) {
-        console.error("Update ticket error:", error);
-        res.status(500).json({ message: "Server error", error: error.message });
+        console.error("Create Ticket Error:", error);
+        res.status(500).json({ message: "Failed to create ticket", error: error.message });
     }
 };
+
 export const addComment = async (req, res) => {
     try {
         const { text } = req.body;
-
         const ticket = await Ticket.findById(req.params.id);
-        if (!ticket) {
-            return res.status(404).json({ message: "Ticket not found" });
-        }
-        if (req.user.role !== "admin" && req.user.role !== "warehouse_manager") {
-            if (ticket.user.toString() !== req.user._id.toString()) {
-                return res.status(403).json({ message: "Not authorized" });
-            }
-        }
+
+        if (!ticket) return res.status(404).json({ message: "Ticket not found" });
 
         ticket.comments.push({
             user: req.user._id,
-            text,
-            createdAt: new Date(),
+            text
         });
+
+
+        if (req.user.role === "admin" && ticket.status === "Open") {
+            ticket.status = "In Progress";
+        }
+
+        if (req.user.role === "employee" && ticket.status === "Waiting on User") {
+            ticket.status = "In Progress";
+        }
 
         await ticket.save();
 
-        const populated = await Ticket.findById(ticket._id)
-            .populate("comments.user", "name email");
 
-        res.json(populated);
+        const updatedTicket = await Ticket.findById(req.params.id).populate("comments.user", "name role");
+        res.json(updatedTicket.comments.pop());
+
     } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+        res.status(500).json({ message: "Failed to add comment" });
     }
 };
-export const getTicketStats = async (req, res) => {
+
+export const updateTicketStatus = async (req, res) => {
     try {
-        const [statusStats, priorityStats, categoryStats, recentTickets] = await Promise.all([
-            Ticket.aggregate([
-                { $group: { _id: "$status", count: { $sum: 1 } } },
-            ]),
-            Ticket.aggregate([
-                { $group: { _id: "$priority", count: { $sum: 1 } } },
-            ]),
-            Ticket.aggregate([
-                { $group: { _id: "$category", count: { $sum: 1 } } },
-            ]),
-            Ticket.countDocuments({
-                createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-            }),
-        ]);
-        const resolvedTickets = await Ticket.find({
-            status: { $in: ["Resolved", "Closed"] },
-            resolvedAt: { $exists: true },
-        });
+        const { status, resolution } = req.body;
 
-        let avgResolutionTime = 0;
-        if (resolvedTickets.length > 0) {
-            const totalTime = resolvedTickets.reduce((sum, t) => {
-                return sum + (new Date(t.resolvedAt) - new Date(t.createdAt));
-            }, 0);
-            avgResolutionTime = Math.round(totalTime / resolvedTickets.length / (1000 * 60 * 60));
-        }
+        const updateData = { status };
+        if (resolution) updateData.resolution = resolution;
+        if (status === "Resolved" || status === "Closed") updateData.resolvedAt = Date.now();
 
-        res.json({
-            byStatus: statusStats.reduce((acc, s) => ({ ...acc, [s._id]: s.count }), {}),
-            byPriority: priorityStats.reduce((acc, s) => ({ ...acc, [s._id]: s.count }), {}),
-            byCategory: categoryStats.reduce((acc, s) => ({ ...acc, [s._id]: s.count }), {}),
-            recentTickets,
-            avgResolutionTime,
-            total: await Ticket.countDocuments(),
-        });
+        const ticket = await Ticket.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+        if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+        res.json(ticket);
+
     } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+        res.status(500).json({ message: "Update failed" });
     }
 };
+
 export const deleteTicket = async (req, res) => {
     try {
         const ticket = await Ticket.findByIdAndDelete(req.params.id);
-
-        if (!ticket) {
-            return res.status(404).json({ message: "Ticket not found" });
-        }
-
-        await createAuditLog({
-            userId: req.user._id,
-            action: "TICKET_DELETED",
-            resource: "Ticket",
-            resourceId: req.params.id,
-            ipAddress: req.ip,
-        });
-
-        res.json({ message: "Ticket deleted successfully" });
+        if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+        res.json({ message: "Ticket deleted" });
     } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
-export const getUserTicketStats = async (req, res) => {
-    try {
-        const stats = await Ticket.aggregate([
-            { $match: { user: req.user._id } },
-            { $group: { _id: "$status", count: { $sum: 1 } } },
-        ]);
-
-        res.json({
-            total: stats.reduce((sum, s) => sum + s.count, 0),
-            byStatus: stats.reduce((acc, s) => ({ ...acc, [s._id]: s.count }), {}),
-        });
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+        res.status(500).json({ message: "Delete failed" });
     }
 };

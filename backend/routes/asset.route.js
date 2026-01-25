@@ -1,4 +1,5 @@
 import express from "express";
+
 import {
     getAllAssets,
     getFeaturedAssets,
@@ -16,8 +17,10 @@ import {
     bulkUpdateStatus,
     getAssignedAssets
 } from "../controllers/asset.controller.js";
+
 import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
-import { validateProduct, validateProductId } from "../middleware/validation.js";
+import { validateAsset, validateAssetId } from "../middleware/validation.js";
+import { fileUploadLimiter } from "../config/security.js";
 
 const router = express.Router();
 
@@ -28,15 +31,18 @@ router.get("/category/:category", getAssetsByCategory);
 router.get("/search", searchAssets);
 router.get("/stats", getAssetStats);
 router.get("/tag/:tag", getAssetByTag);
-router.get("/:id", validateProductId, getAssetById);
+router.get("/:id", validateAssetId, getAssetById);
 
 router.get("/assigned/:userId", protectRoute, getAssignedAssets);
 
 router.get("/export/csv", protectRoute, adminRoute, exportAssets);
-router.post("/", protectRoute, adminRoute, validateProduct, createAsset);
-router.put("/:id", protectRoute, adminRoute, validateProductId, validateProduct, updateAsset);
-router.patch("/:id", protectRoute, adminRoute, validateProductId, toggleFeaturedAsset);
-router.delete("/:id", protectRoute, adminRoute, validateProductId, deleteAsset);
+router.post("/", protectRoute, adminRoute, fileUploadLimiter, validateAsset, createAsset);
+router.put("/:id", protectRoute, adminRoute, validateAssetId, validateAsset, updateAsset);
+router.patch("/:id", protectRoute, adminRoute, validateAssetId, toggleFeaturedAsset);
+router.delete("/:id", protectRoute, adminRoute, validateAssetId, deleteAsset);
 router.post("/bulk/status", protectRoute, adminRoute, bulkUpdateStatus);
 
 export default router;
+
+
+
