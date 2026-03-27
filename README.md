@@ -7,7 +7,7 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
 
-A comprehensive inventory management system designed for enterprise IT operations. This application centralizes hardware tracking, software license management, and employee procurement workflows into a single secure platform. It is engineered to handle complex state changes using a distributed caching layer.
+A comprehensive inventory management system designed for enterprise IT operations. This application centralizes hardware tracking, software license management, and employee procurement workflows into a single secure platform. It is engineered to handle complex state changes using a server-side caching layer.
 
 ## System Overview
 
@@ -24,7 +24,7 @@ The system follows a tiered architecture separating the client, API, and data la
 
 ```mermaid
 graph TD
-    Client[React Frontend] -->|HTTPS| API[Node.js Express API]
+    Client[React Frontend] -->|REST API| API[Node.js Express API]
     API -->|Read-Through Cache| Cache[(Redis)]
     API -->|Persistent Storage| DB[(MongoDB)]
     API -->|Security| Auth[TOTP & JWT]
@@ -55,7 +55,7 @@ graph LR
 
 1. Clone the Repository
 ```text
-git clone [https://github.com/vinamras19/it-asset-management-portal.git]
+git clone https://github.com/vinamras19/it-asset-management-portal.git
 cd it-asset-management-portal
 ```
 2. Configure Environment Create a .env file in the root directory.
