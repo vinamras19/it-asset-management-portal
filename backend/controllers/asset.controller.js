@@ -50,7 +50,16 @@ export const createAsset = asyncHandler(async (req, res) => {
 
 export const updateAsset = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const updatedAsset = await Asset.findByIdAndUpdate(id, req.body, { new: true }).populate('assignedTo', 'name email');
+
+    const allowedFields = ['name', 'description', 'purchasePrice', 'image', 'category', 'serialNumber', 'status', 'condition', 'assignedTo', 'purchaseDate', 'location', 'usefulLife', 'isFeatured'];
+    const updates = {};
+    for (const key of allowedFields) {
+        if (req.body[key] !== undefined) {
+            updates[key] = req.body[key];
+        }
+    }
+
+    const updatedAsset = await Asset.findByIdAndUpdate(id, updates, { new: true }).populate('assignedTo', 'name email');
 
     if (!updatedAsset) {
         res.status(404);

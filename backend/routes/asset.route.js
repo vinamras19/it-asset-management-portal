@@ -29,7 +29,7 @@ router.get("/featured", getFeaturedAssets);
 router.get("/recommendations", getRecommendedAssets);
 router.get("/category/:category", getAssetsByCategory);
 router.get("/search", searchAssets);
-router.get("/stats", getAssetStats);
+router.get("/stats", protectRoute, getAssetStats);
 router.get("/tag/:tag", getAssetByTag);
 router.get("/:id", validateAssetId, getAssetById);
 

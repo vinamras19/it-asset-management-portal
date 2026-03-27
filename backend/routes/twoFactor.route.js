@@ -1,4 +1,5 @@
 import express from "express";
+import { authLimiter } from "../config/security.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 import {
@@ -14,7 +15,7 @@ const router = express.Router();
 router.get("/status", protectRoute, get2FAStatus);
 router.post("/generate", protectRoute, generate2FASecret);
 router.post("/verify-setup", protectRoute, verify2FASetup);
-router.post("/verify-login", verify2FALogin);
+router.post("/verify-login", authLimiter, verify2FALogin);
 router.post("/disable", protectRoute, disable2FA);
 router.post("/regenerate-backup", protectRoute, regenerateBackupCodes);
 

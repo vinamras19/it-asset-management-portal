@@ -31,6 +31,10 @@ const auditLogSchema = new mongoose.Schema(
                 'SUSPICIOUS_ACTIVITY',
                 'RATE_LIMIT_EXCEEDED',
                 'PERMISSION_DENIED',
+                '2FA_ENABLED',
+                '2FA_DISABLED',
+                '2FA_BACKUP_REGENERATED',
+                'PASSWORD_RESET_COMPLETED',
             ],
         },
 
