@@ -1,11 +1,3 @@
-/**
- * TODO: Migrate to centralized cache utilities
- *
- * Currently using redis.get/set directly in controllers.
- * This module provides consistent TTL, key naming, and error handling.
- * Will refactor asset/analytics caching to use these helpers.
- */
-
 import { redis } from "./redis.js";
 
 const DEFAULT_TTL = 300;
