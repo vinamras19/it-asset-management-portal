@@ -18,7 +18,8 @@ import {
     getAssignedAssets
 } from "../controllers/asset.controller.js";
 
-import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
+import { protectRoute } from "../middleware/auth.middleware.js";
+import { checkPermission } from "../middleware/permission.middleware.js";
 import { validateAsset, validateAssetId } from "../middleware/validation.js";
 import { fileUploadLimiter } from "../config/security.js";
 
@@ -35,12 +36,12 @@ router.get("/:id", validateAssetId, getAssetById);
 
 router.get("/assigned/:userId", protectRoute, getAssignedAssets);
 
-router.get("/export/csv", protectRoute, adminRoute, exportAssets);
-router.post("/", protectRoute, adminRoute, fileUploadLimiter, validateAsset, createAsset);
-router.put("/:id", protectRoute, adminRoute, validateAssetId, validateAsset, updateAsset);
-router.patch("/:id", protectRoute, adminRoute, validateAssetId, toggleFeaturedAsset);
-router.delete("/:id", protectRoute, adminRoute, validateAssetId, deleteAsset);
-router.post("/bulk/status", protectRoute, adminRoute, bulkUpdateStatus);
+router.get("/export/csv", protectRoute, checkPermission('assets', 'read'), exportAssets);
+router.post("/", protectRoute, checkPermission('assets', 'create'), fileUploadLimiter, validateAsset, createAsset);
+router.put("/:id", protectRoute, checkPermission('assets', 'update'), validateAssetId, validateAsset, updateAsset);
+router.patch("/:id", protectRoute, checkPermission('assets', 'update'), validateAssetId, toggleFeaturedAsset);
+router.delete("/:id", protectRoute, checkPermission('assets', 'delete'), validateAssetId, deleteAsset);
+router.post("/bulk/status", protectRoute, checkPermission('assets', 'update'), bulkUpdateStatus);
 
 export default router;
 
