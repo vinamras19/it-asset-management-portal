@@ -1,20 +1,13 @@
 # IT Asset Management Portal
 
-![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react&logoColor=black)
-![Node.js](https://img.shields.io/badge/Node.js-18-339933?style=flat&logo=node.js&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=flat&logo=mongodb&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-7.0-DC382D?style=flat&logo=redis&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
-
-A comprehensive inventory management system designed for enterprise IT operations. This application centralizes hardware tracking, software license management, and employee procurement workflows into a single secure platform. It is engineered to handle complex state changes using a server-side caching layer.
+A comprehensive inventory management system designed for enterprise IT operations. This application centralizes hardware tracking, software license management, and employee procurement workflows into a single secure platform. It is engineered to handle complex state changes using a Redis caching layer.
 
 ## System Overview
 
 * **Performance & Caching:** Utilizes [Redis](https://redis.io/) to cache high-frequency read operations (such as asset listings and statistics), significantly reducing load on the primary MongoDB database during peak traffic.
 * **Security Architecture:** Implements a secure authentication flow using JWTs in http-only cookies to prevent XSS. Critical actions are protected by [Speakeasy (TOTP)](https://github.com/speakeasyjs/speakeasy), Rate Limiting, and strict Role-Based Access Control (RBAC).
 * **Data Processing:** Leverages [MongoDB Aggregation Pipelines](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) for server-side statistics and reporting. Includes PDF report generation for assets, tickets, and audit logs.
-* **Asset Lifecycle:** Enforces a structured state machine for assets (Available → Assigned → Maintenance → Retired), ensuring audit trails are maintained for every status change.
+* **Asset Lifecycle:** Enforces validated status transitions for assets (Available → Assigned → Maintenance → Retired), rejecting invalid state changes and maintaining audit trails for every transition.
 
 ## Architecture
 
@@ -137,9 +130,9 @@ GET    /stats              → aggregated counts
 GET    /search?query=      → search
 GET    /assigned/:userId   → user's assets
 GET    /export/csv         → download CSV
-POST   /                   → create (admin)
-PUT    /:id                → update (admin)
-DELETE /:id                → delete (admin)
+POST   /                   → create (restricted)
+PUT    /:id                → update (restricted)
+DELETE /:id                → delete (admin only)
 ```
 
 **Requests** `/api/requests`
