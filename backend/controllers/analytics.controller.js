@@ -1,5 +1,6 @@
 import Asset from "../models/asset.model.js";
 import { redis } from "../lib/redis.js";
+import { cacheGet, CacheKeys } from "../lib/cache.js";
 
 export const getAnalyticsData = async (req, res) => {
     try {
@@ -24,22 +25,14 @@ export const getAnalyticsData = async (req, res) => {
 export const getAssetStatsByCategory = async (req, res) => {
     try {
         const { category } = req.params;
-        const cacheKey = `analytics:category:${category}`;
-        const cachedData = await redis.get(cacheKey);
-
-        if (cachedData) {
-            return res.json(JSON.parse(cachedData));
-        }
-
-        // Database aggregation
-        const stats = await Asset.aggregate([
-            { $match: { category: category } },
-            { $group: { _id: "$status", count: { $sum: 1 } } }
-        ]);
-
-        await redis.set(cacheKey, JSON.stringify(stats), "EX", 3600);
-
-        res.json(stats);
+const stats = await cacheGet(CacheKeys.ANALYTICS_CATEGORY(category), () =>
+    Asset.aggregate([
+        { $match: { category: category } },
+        { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]),
+    3600
+);
+res.json(stats);
     } catch (error) {
         console.error("Error fetching category stats:", error.message);
         res.status(500).json({ message: "Server error", error: error.message });
