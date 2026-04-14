@@ -1,16 +1,13 @@
 import Asset from "../models/asset.model.js";
 import { redis } from "../lib/redis.js";
+import { cacheGet, cacheInvalidate, CacheKeys } from "../lib/cache.js";
 import cloudinary from "../lib/cloudinary.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 
 export const getAllAssets = asyncHandler(async (req, res) => {
-    const cachedAssets = await redis.get("assets:list");
-    if (cachedAssets) {
-        return res.json(JSON.parse(cachedAssets));
-    }
-
-    const assets = await Asset.find({}).populate('assignedTo', 'name email department');
-    await redis.set("assets:list", JSON.stringify(assets), "EX", 300);
+    const assets = await cacheGet(CacheKeys.ASSET_LIST, () =>
+        Asset.find({}).populate('assignedTo', 'name email department')
+    );
     res.json(assets);
 });
 
@@ -44,29 +41,38 @@ export const createAsset = asyncHandler(async (req, res) => {
         image: cloudinaryResponse?.secure_url ? cloudinaryResponse.secure_url : "",
     });
 
-    await redis.del("assets:list");
+    await cacheInvalidate(CacheKeys.ASSET_LIST);
     res.status(201).json(asset);
 });
 
+// status transitions
+const STATUS_TRANSITIONS = {
+    available: ['assigned', 'maintenance', 'retired'],
+    assigned: ['available', 'maintenance'],
+    maintenance: ['available', 'retired'],
+    retired: [],
+    lost: [],
+};
+
 export const updateAsset = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const asset = await Asset.findById(id);
 
-    const allowedFields = ['name', 'description', 'purchasePrice', 'image', 'category', 'serialNumber', 'status', 'condition', 'assignedTo', 'purchaseDate', 'location', 'usefulLife', 'isFeatured'];
-    const updates = {};
-    for (const key of allowedFields) {
-        if (req.body[key] !== undefined) {
-            updates[key] = req.body[key];
-        }
-    }
-
-    const updatedAsset = await Asset.findByIdAndUpdate(id, updates, { new: true }).populate('assignedTo', 'name email');
-
-    if (!updatedAsset) {
+    if (!asset) {
         res.status(404);
         throw new Error("Asset not found");
     }
 
-    await redis.del("assets:list");
+    if (req.body.status && req.body.status !== asset.status) {
+        const allowed = STATUS_TRANSITIONS[asset.status] || [];
+        if (!allowed.includes(req.body.status)) {
+            res.status(400);
+            throw new Error(`Cannot transition from '${asset.status}' to '${req.body.status}'`);
+        }
+    }
+
+    const updatedAsset = await Asset.findByIdAndUpdate(id, req.body, { new: true }).populate('assignedTo', 'name email');
+    await cacheInvalidate(CacheKeys.ASSET_LIST);
     res.json(updatedAsset);
 });
 
@@ -87,7 +93,7 @@ export const deleteAsset = asyncHandler(async (req, res) => {
     }
 
     await Asset.findByIdAndDelete(req.params.id);
-    await redis.del("assets:list");
+    await cacheInvalidate(CacheKeys.ASSET_LIST);
     res.json({ message: "Asset deleted successfully" });
 });
 
@@ -146,7 +152,7 @@ export const toggleFeaturedAsset = asyncHandler(async (req, res) => {
     asset.isFeatured = !asset.isFeatured;
     await asset.save();
 
-    await redis.del("assets:list");
+    await cacheInvalidate(CacheKeys.ASSET_LIST);
 
     res.json(asset);
 });
@@ -163,7 +169,7 @@ export const bulkUpdateStatus = asyncHandler(async (req, res) => {
         { $set: { status: status.toLowerCase() } }
     );
 
-    await redis.del("assets:list");
+    await cacheInvalidate(CacheKeys.ASSET_LIST);
     res.json({ message: "Bulk update successful" });
 });
 
