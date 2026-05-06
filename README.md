@@ -1,12 +1,14 @@
 # IT Asset Management Portal
 
-A comprehensive inventory management system designed for enterprise IT operations. This application centralizes hardware tracking, software license management, and employee procurement workflows into a single secure platform. It is engineered to handle complex state changes using a Redis caching layer.
+**Tech Stack:** React, Node.js, Express, MongoDB, Redis, Docker
 
-## System Overview
+An inventory management system for IT asset tracking, license management, and employee procurement workflows, with Redis caching and role-based access control.
 
-* **Performance & Caching:** Utilizes [Redis](https://redis.io/) to cache high-frequency read operations (such as asset listings and statistics), significantly reducing load on the primary MongoDB database during peak traffic.
+## Application Overview
+
+* **Performance & Caching:** Utilizes [Redis](https://redis.io/) to cache high-frequency read operations (such as asset listings and statistics), significantly reducing load on the primary MongoDB database.
 * **Security Architecture:** Implements a secure authentication flow using JWTs in http-only cookies to prevent XSS. Critical actions are protected by [Speakeasy (TOTP)](https://github.com/speakeasyjs/speakeasy), Rate Limiting, and strict Role-Based Access Control (RBAC).
-* **Data Processing:** Leverages [MongoDB Aggregation Pipelines](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) for server-side statistics and reporting. Includes PDF report generation for assets, tickets, and audit logs.
+* **Data Processing:** Uses [MongoDB Aggregation Pipelines](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) for server-side statistics and reporting. Includes PDF report generation for assets, tickets, and audit logs.
 * **Asset Lifecycle:** Enforces validated status transitions for assets (Available → Assigned → Maintenance → Retired), rejecting invalid state changes and maintaining audit trails for every transition.
 
 ## Architecture
