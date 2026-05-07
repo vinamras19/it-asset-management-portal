@@ -6,14 +6,14 @@ An inventory management system for IT asset tracking, license management, and em
 
 ## Application Overview
 
-* **Performance & Caching:** Utilizes [Redis](https://redis.io/) to cache high-frequency read operations (such as asset listings and statistics), significantly reducing load on the primary MongoDB database.
-* **Security Architecture:** Implements a secure authentication flow using JWTs in http-only cookies to prevent XSS. Critical actions are protected by [Speakeasy (TOTP)](https://github.com/speakeasyjs/speakeasy), Rate Limiting, and strict Role-Based Access Control (RBAC).
+* **Performance & Caching:** Uses [Redis](https://redis.io/) to cache high-frequency read operations (such as asset listings and statistics), significantly reducing load on the primary MongoDB database.
+* **Security Architecture:** Implements a secure authentication flow using JWTs in http-only cookies to prevent XSS. Critical actions are protected by [Speakeasy (TOTP)](https://github.com/speakeasyjs/speakeasy), Rate Limiting, and Role-Based Access Control (RBAC).
 * **Data Processing:** Uses [MongoDB Aggregation Pipelines](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) for server-side statistics and reporting. Includes PDF report generation for assets, tickets, and audit logs.
 * **Asset Lifecycle:** Enforces validated status transitions for assets (Available → Assigned → Maintenance → Retired), rejecting invalid state changes and maintaining audit trails for every transition.
 
 ## Architecture
 
-The system follows a tiered architecture separating the client, API, and data layers, containerized via Docker.
+Tiered architecture with separate client, API, and data layers, containerized via Docker.
 
 ### High-Level Infrastructure
 
