@@ -3,12 +3,8 @@ import { redis } from "./redis.js";
 const DEFAULT_TTL = 300;
 
 export const CacheKeys = {
-    ANALYTICS_DASHBOARD: "analytics:dashboard",
-    ANALYTICS_ASSET_STATS: "analytics:asset-stats",
     ANALYTICS_CATEGORY: (cat) => `analytics:category:${cat}`,
     ASSET_LIST: "assets:list",
-    ASSET_FEATURED: "assets:featured",
-    ASSET_DETAIL: (id) => `assets:detail:${id}`,
 };
 
 export const cacheGet = async (key, fetchFunction, ttl = DEFAULT_TTL) => {

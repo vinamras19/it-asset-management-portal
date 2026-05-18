@@ -25,14 +25,14 @@ import { fileUploadLimiter } from "../config/security.js";
 
 const router = express.Router();
 
-router.get("/", getAllAssets);
-router.get("/featured", getFeaturedAssets);
-router.get("/recommendations", getRecommendedAssets);
-router.get("/category/:category", getAssetsByCategory);
-router.get("/search", searchAssets);
+router.get("/", protectRoute, getAllAssets);
+router.get("/featured", protectRoute, getFeaturedAssets);
+router.get("/recommendations", protectRoute, getRecommendedAssets);
+router.get("/category/:category", protectRoute, getAssetsByCategory);
+router.get("/search", protectRoute, searchAssets);
 router.get("/stats", protectRoute, getAssetStats);
-router.get("/tag/:tag", getAssetByTag);
-router.get("/:id", validateAssetId, getAssetById);
+router.get("/tag/:tag", protectRoute, getAssetByTag);
+router.get("/:id", protectRoute, validateAssetId, getAssetById);
 
 router.get("/assigned/:userId", protectRoute, getAssignedAssets);
 

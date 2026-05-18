@@ -9,7 +9,7 @@ import {
 
 const router = express.Router();
 
-router.get("/", getAnalyticsData);
+router.get("/", protectRoute, getAnalyticsData);
 router.get("/category/:category", protectRoute, adminRoute, getAssetStatsByCategory);
 router.get("/cache-status", protectRoute, adminRoute, getCacheStatus);
 router.post("/cache-invalidate", protectRoute, adminRoute, async (req, res) => {
