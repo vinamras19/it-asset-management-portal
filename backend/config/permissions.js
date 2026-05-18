@@ -5,7 +5,7 @@ export const rolePermissions = {
         profile: ['read', 'update'],
         tickets: ['create', 'read']
     },
-    warehouse_manager: {
+    manager: {
         assets: ['create', 'read', 'update'],
         requests: ['read', 'update'],
         analytics: ['read'],
