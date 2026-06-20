@@ -3,8 +3,9 @@ import { asyncHandler } from "../middleware/asyncHandler.js";
 import cloudinary from "../lib/cloudinary.js";
 
 export const getAllTickets = asyncHandler(async (req, res) => {
-    // Admin sees all, Employees see their own
-    const query = req.user.role === "admin" ? {} : { user: req.user._id };
+    // Admins and managers see all tickets, everyone else sees their own
+    const isStaff = req.user.role === "admin" || req.user.role === "manager";
+    const query = isStaff ? {} : { user: req.user._id };
 
     const tickets = await Ticket.find(query)
         .populate("user", "name email")
@@ -25,8 +26,9 @@ export const getTicketById = asyncHandler(async (req, res) => {
         throw new Error("Ticket not found");
     }
 
-    // Access Control
-    if (req.user.role !== "admin" && ticket.user._id.toString() !== req.user._id.toString()) {
+    // Admins and managers may view any ticket; others only their own
+    const isStaff = req.user.role === "admin" || req.user.role === "manager";
+    if (!isStaff && ticket.user._id.toString() !== req.user._id.toString()) {
         res.status(403);
         throw new Error("Not authorized");
     }
@@ -96,13 +98,19 @@ export const addComment = async (req, res) => {
 
         if (!ticket) return res.status(404).json({ message: "Ticket not found" });
 
+        // Only admins, managers, or the ticket owner may comment
+        const isStaff = req.user.role === "admin" || req.user.role === "manager";
+        if (!isStaff && ticket.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: "Not authorized" });
+        }
+
         ticket.comments.push({
             user: req.user._id,
             text
         });
 
 
-        if (req.user.role === "admin" && ticket.status === "Open") {
+        if (isStaff && ticket.status === "Open") {
             ticket.status = "In Progress";
         }
 
@@ -129,7 +137,7 @@ export const updateTicketStatus = async (req, res) => {
         if (resolution) updateData.resolution = resolution;
         if (status === "Resolved" || status === "Closed") updateData.resolvedAt = Date.now();
 
-        const ticket = await Ticket.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        const ticket = await Ticket.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
 
         if (!ticket) return res.status(404).json({ message: "Ticket not found" });
 
