@@ -1,5 +1,6 @@
 import express from "express";
-import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
+import { protectRoute } from "../middleware/auth.middleware.js";
+import { checkPermission, restrictTo } from "../middleware/permission.middleware.js";
 
 import {
     createRequest,
@@ -22,9 +23,9 @@ router.get("/my", protectRoute, getMyRequests);
 router.patch("/:id/cancel", protectRoute, cancelRequest);
 router.get("/:id", protectRoute, getRequestById);
 
-// Admin Routes
-router.get("/admin/all", protectRoute, adminRoute, getAllRequests);
-router.get("/admin/stats", protectRoute, adminRoute, getRequestStats);
-router.patch("/:id/status", protectRoute, adminRoute, updateRequestStatus);
+// Management routes (read: admin/manager/auditor, status update: admin/manager)
+router.get("/admin/all", protectRoute, restrictTo('admin', 'manager', 'auditor'), getAllRequests);
+router.get("/admin/stats", protectRoute, restrictTo('admin', 'manager', 'auditor'), getRequestStats);
+router.patch("/:id/status", protectRoute, checkPermission('requests', 'update'), updateRequestStatus);
 
 export default router;

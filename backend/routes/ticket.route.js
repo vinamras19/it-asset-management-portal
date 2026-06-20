@@ -1,5 +1,6 @@
 import express from "express";
-import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
+import { protectRoute } from "../middleware/auth.middleware.js";
+import { checkPermission, restrictTo } from "../middleware/permission.middleware.js";
 import { validateTicket } from "../middleware/validation.js";
 
 import {
@@ -21,8 +22,8 @@ router.get("/my-stats", protectRoute, getUserTicketStats);
 router.get("/:id", protectRoute, getTicketById);
 router.post("/:id/comments", protectRoute, addComment);
 
-router.get("/admin/stats", protectRoute, adminRoute, getTicketStats);
-router.patch("/:id", protectRoute, adminRoute, updateTicketStatus);
-router.delete("/:id", protectRoute, adminRoute, deleteTicket);
+router.get("/admin/stats", protectRoute, restrictTo('admin', 'manager'), getTicketStats);
+router.patch("/:id", protectRoute, checkPermission('tickets', 'update'), updateTicketStatus);
+router.delete("/:id", protectRoute, checkPermission('tickets', 'delete'), deleteTicket);
 
 export default router;

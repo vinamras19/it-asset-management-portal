@@ -1,5 +1,6 @@
 import express from "express";
 import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
+import { checkPermission } from "../middleware/permission.middleware.js";
 import {
     getAnalyticsData,
     getAssetStatsByCategory,
@@ -10,7 +11,7 @@ import {
 const router = express.Router();
 
 router.get("/", protectRoute, getAnalyticsData);
-router.get("/category/:category", protectRoute, adminRoute, getAssetStatsByCategory);
+router.get("/category/:category", protectRoute, checkPermission('analytics', 'read'), getAssetStatsByCategory);
 router.get("/cache-status", protectRoute, adminRoute, getCacheStatus);
 router.post("/cache-invalidate", protectRoute, adminRoute, async (req, res) => {
     await invalidateAnalyticsCache();

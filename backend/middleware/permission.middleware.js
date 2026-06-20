@@ -17,31 +17,6 @@ export const checkPermission = (resource, action) => {
     };
 };
 
-export const checkOwnership = (getResourceUserId) => {
-    return async (req, res, next) => {
-        try {
-            if (req.user.role === 'admin') {
-                return next();
-            }
-            const resourceUserId = await getResourceUserId(req);
-
-            if (!resourceUserId) {
-                return res.status(404).json({ message: 'Resource not found' });
-            }
-            if (resourceUserId.toString() !== req.user._id.toString()) {
-                return res.status(403).json({
-                    message: 'Access denied: You can only access your own resources'
-                });
-            }
-
-            next();
-        } catch (error) {
-            console.error('Ownership check error:', error.message);
-            res.status(500).json({ message: 'Server error' });
-        }
-    };
-};
-
 export const restrictTo = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {
