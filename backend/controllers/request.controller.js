@@ -1,10 +1,11 @@
 import Request from "../models/request.model.js";
 import Asset from "../models/asset.model.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
+import { createAuditLog } from "./audit.controller.js";
 
 export const getMyRequests = asyncHandler(async (req, res) => {
     const requests = await Request.find({ user: req.user._id })
-        .populate("assets.asset", "name category price")
+        .populate("assets.asset", "name category purchasePrice")
         .sort({ createdAt: -1 });
     res.json(requests);
 });
@@ -12,15 +13,16 @@ export const getMyRequests = asyncHandler(async (req, res) => {
 export const getRequestById = asyncHandler(async (req, res) => {
     const request = await Request.findById(req.params.id)
         .populate("user", "name email department")
-        .populate("assets.asset", "name price image");
+        .populate("assets.asset", "name purchasePrice image");
 
     if (!request) {
         res.status(404);
         throw new Error("Request not found");
     }
 
-    // Security: Users can only see their own requests (unless Admin)
-    if (request.user._id.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    // Owners can view their own; admins, managers, and auditors can view any
+    const isPrivileged = ["admin", "manager", "auditor"].includes(req.user.role);
+    if (request.user._id.toString() !== req.user._id.toString() && !isPrivileged) {
         res.status(403);
         throw new Error("Not authorized to view this request");
     }
@@ -124,6 +126,16 @@ export const updateRequestStatus = async (req, res) => {
         }
 
         await request.save();
+
+        await createAuditLog({
+            userId: req.user._id,
+            action: 'UPDATE',
+            resource: 'Request',
+            resourceId: request._id.toString(),
+            ipAddress: req.ip,
+            changes: { before: { status: oldStatus }, after: { status: request.status } }
+        });
+
         res.json(request);
 
     } catch (error) {
