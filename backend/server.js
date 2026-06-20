@@ -19,6 +19,7 @@ import twoFactorRoutes from "./routes/twoFactor.route.js";
 
 import { connectDB } from "./lib/db.js";
 import { securityHeaders } from "./config/security.js";
+import { sanitizeInput } from "./middleware/validation.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,6 +36,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
+app.use(sanitizeInput);
 
 if (process.env.NODE_ENV === "development") {
     app.use(morgan("dev"));
