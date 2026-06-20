@@ -29,14 +29,6 @@ export const cacheGet = async (key, fetchFunction, ttl = DEFAULT_TTL) => {
     }
 };
 
-export const cacheSet = async (key, data, ttl = DEFAULT_TTL) => {
-    try {
-        await redis.setex(key, ttl, JSON.stringify(data));
-    } catch (error) {
-        console.error(`[Cache] Set Error ${key}:`, error.message);
-    }
-};
-
 export const cacheInvalidate = async (key) => {
     try {
         await redis.del(key);
