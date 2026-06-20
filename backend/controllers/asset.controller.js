@@ -1,8 +1,8 @@
 import Asset from "../models/asset.model.js";
-import { redis } from "../lib/redis.js";
-import { cacheGet, cacheInvalidate, CacheKeys } from "../lib/cache.js";
+import { cacheGet, cacheInvalidate, cacheInvalidatePattern, CacheKeys } from "../lib/cache.js";
 import cloudinary from "../lib/cloudinary.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
+import { createAuditLog } from "./audit.controller.js";
 
 export const getAllAssets = asyncHandler(async (req, res) => {
     const assets = await cacheGet(CacheKeys.ASSET_LIST, () =>
@@ -21,7 +21,7 @@ export const getAssetById = asyncHandler(async (req, res) => {
 });
 
 export const createAsset = asyncHandler(async (req, res) => {
-    const { name, model, description, purchasePrice, image, category, serialNumber, status, purchaseDate, location } = req.body;
+    const { name, description, purchasePrice, image, category, serialNumber, status, purchaseDate, location } = req.body;
 
     let cloudinaryResponse = null;
     if (image) {
@@ -30,7 +30,6 @@ export const createAsset = asyncHandler(async (req, res) => {
 
     const asset = await Asset.create({
         name,
-        model,
         description,
         purchasePrice: purchasePrice || 0,
         category,
@@ -39,9 +38,23 @@ export const createAsset = asyncHandler(async (req, res) => {
         purchaseDate,
         location: location || 'Warehouse',
         image: cloudinaryResponse?.secure_url ? cloudinaryResponse.secure_url : "",
+        history: [{
+            action: 'CREATE',
+            user: req.user?.name || 'System',
+            details: `Asset created with status '${status || 'available'}'`
+        }]
+    });
+
+    await createAuditLog({
+        userId: req.user._id,
+        action: 'CREATE',
+        resource: 'Asset',
+        resourceId: asset._id.toString(),
+        ipAddress: req.ip
     });
 
     await cacheInvalidate(CacheKeys.ASSET_LIST);
+    await cacheInvalidatePattern('analytics:*');
     res.status(201).json(asset);
 });
 
@@ -51,7 +64,6 @@ const STATUS_TRANSITIONS = {
     assigned: ['available', 'maintenance'],
     maintenance: ['available', 'retired'],
     retired: [],
-    lost: [],
 };
 
 export const updateAsset = asyncHandler(async (req, res) => {
@@ -71,8 +83,37 @@ export const updateAsset = asyncHandler(async (req, res) => {
         }
     }
 
-    const updatedAsset = await Asset.findByIdAndUpdate(id, req.body, { new: true }).populate('assignedTo', 'name email');
+    const before = { status: asset.status, location: asset.location, assignedTo: asset.assignedTo };
+
+    // Identity is immutable and history is server-managed, so strip both before applying
+    const updates = { ...req.body };
+    delete updates._id;
+    delete updates.history;
+    Object.assign(asset, updates);
+
+    asset.history.push({
+        action: 'UPDATE',
+        user: req.user?.name || 'System',
+        details: req.body.status ? `Status changed to '${req.body.status}'` : 'Asset details updated'
+    });
+
+    const updatedAsset = await asset.save();
+    await updatedAsset.populate({ path: 'assignedTo', select: 'name email' });
+
+    await createAuditLog({
+        userId: req.user._id,
+        action: 'UPDATE',
+        resource: 'Asset',
+        resourceId: updatedAsset._id.toString(),
+        ipAddress: req.ip,
+        changes: {
+            before,
+            after: { status: updatedAsset.status, location: updatedAsset.location, assignedTo: updatedAsset.assignedTo }
+        }
+    });
+
     await cacheInvalidate(CacheKeys.ASSET_LIST);
+    await cacheInvalidatePattern('analytics:*');
     res.json(updatedAsset);
 });
 
@@ -88,25 +129,38 @@ export const deleteAsset = asyncHandler(async (req, res) => {
         try {
             await cloudinary.uploader.destroy(`assets/${publicId}`);
         } catch (error) {
-            console.log("Error deleting image from cloudinary", error);
+            console.error("Error deleting image from cloudinary", error);
         }
     }
 
     await Asset.findByIdAndDelete(req.params.id);
+
+    await createAuditLog({
+        userId: req.user._id,
+        action: 'DELETE',
+        resource: 'Asset',
+        resourceId: req.params.id,
+        ipAddress: req.ip
+    });
+
     await cacheInvalidate(CacheKeys.ASSET_LIST);
+    await cacheInvalidatePattern('analytics:*');
     res.json({ message: "Asset deleted successfully" });
 });
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const searchAssets = asyncHandler(async (req, res) => {
     const { query } = req.query;
     if (!query) return res.json([]);
 
+    const safe = escapeRegex(query);
     const assets = await Asset.find({
         $or: [
-            { name: { $regex: query, $options: "i" } },
-            { description: { $regex: query, $options: "i" } },
-            { serialNumber: { $regex: query, $options: "i" } },
-            { assetTag: { $regex: query, $options: "i" } }
+            { name: { $regex: safe, $options: "i" } },
+            { description: { $regex: safe, $options: "i" } },
+            { serialNumber: { $regex: safe, $options: "i" } },
+            { assetTag: { $regex: safe, $options: "i" } }
         ]
     });
     res.json(assets);
@@ -159,18 +213,56 @@ export const toggleFeaturedAsset = asyncHandler(async (req, res) => {
 
 export const bulkUpdateStatus = asyncHandler(async (req, res) => {
     const { assetIds, status } = req.body;
-    if (!assetIds || !status) {
+    if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0 || !status) {
         res.status(400);
         throw new Error("Missing required fields");
     }
 
-    await Asset.updateMany(
-        { _id: { $in: assetIds } },
-        { $set: { status: status.toLowerCase() } }
-    );
+    const target = status.toLowerCase();
+    const assets = await Asset.find({ _id: { $in: assetIds } });
 
-    await cacheInvalidate(CacheKeys.ASSET_LIST);
-    res.json({ message: "Bulk update successful" });
+    const updated = [];
+    const skipped = [];
+
+    for (const asset of assets) {
+        if (asset.status === target) {
+            updated.push(asset._id);
+            continue;
+        }
+
+        const allowed = STATUS_TRANSITIONS[asset.status] || [];
+        if (!allowed.includes(target)) {
+            skipped.push({ id: asset._id, reason: `Cannot transition from '${asset.status}' to '${target}'` });
+            continue;
+        }
+
+        asset.status = target;
+        asset.history.push({
+            action: 'UPDATE',
+            user: req.user?.name || 'System',
+            details: `Bulk status change to '${target}'`
+        });
+        await asset.save();
+        updated.push(asset._id);
+    }
+
+    if (updated.length > 0) {
+        await createAuditLog({
+            userId: req.user._id,
+            action: 'UPDATE',
+            resource: 'Asset',
+            ipAddress: req.ip,
+            metadata: { bulk: true, status: target, updated: updated.length, skipped: skipped.length }
+        });
+        await cacheInvalidate(CacheKeys.ASSET_LIST);
+        await cacheInvalidatePattern('analytics:*');
+    }
+
+    res.json({
+        message: `Bulk update complete: ${updated.length} updated, ${skipped.length} skipped`,
+        updated,
+        skipped
+    });
 });
 
 export const getAssetStats = asyncHandler(async (req, res) => {
