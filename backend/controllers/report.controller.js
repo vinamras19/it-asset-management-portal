@@ -105,8 +105,3 @@ export const generateAuditReport = async (req, res) => {
         if (!res.headersSent) res.status(500).json({ message: "Could not generate report" });
     }
 };
-
-export const generateUserAssetsReport = async (req, res) => {
-
-    res.status(501).json({ message: "Not implemented yet" });
-};
