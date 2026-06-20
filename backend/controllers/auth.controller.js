@@ -210,10 +210,6 @@ export const updateProfile = asyncHandler(async (req, res) => {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
 
-    if (req.body.password) {
-        user.password = req.body.password;
-    }
-
     const updatedUser = await user.save();
 
     res.json({
