@@ -131,6 +131,17 @@ export const verify2FALogin = async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
             });
 
+            user.lastLoginAt = new Date();
+            user.lastLoginIp = req.ip;
+            await user.save();
+
+            await createAuditLog({
+                userId: user._id,
+                action: "LOGIN_SUCCESS",
+                resource: "Auth",
+                ipAddress: req.ip
+            });
+
             return res.json({
                 verified: true,
                 message: "2FA verification successful",
@@ -159,6 +170,17 @@ export const verify2FALogin = async (req, res) => {
                         maxAge: 7 * 24 * 60 * 60 * 1000,
                     });
 
+                    user.lastLoginAt = new Date();
+                    user.lastLoginIp = req.ip;
+                    await user.save();
+
+                    await createAuditLog({
+                        userId: user._id,
+                        action: "LOGIN_SUCCESS",
+                        resource: "Auth",
+                        ipAddress: req.ip
+                    });
+
                     return res.json({
                         verified: true,
                         message: "Backup code used successfully",
@@ -166,6 +188,14 @@ export const verify2FALogin = async (req, res) => {
                         user: { _id: user._id, name: user.name, email: user.email, role: user.role }
                     });
                 }
+
+        await createAuditLog({
+            userId: user._id,
+            action: "LOGIN_FAILED",
+            resource: "Auth",
+            ipAddress: req.ip,
+            status: "FAILURE"
+        });
 
         res.status(400).json({
             verified: false,
