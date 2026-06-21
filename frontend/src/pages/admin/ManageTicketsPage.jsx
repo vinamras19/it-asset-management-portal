@@ -7,15 +7,18 @@ import {
   AlertCircle,
   MessageSquare,
   Trash2,
-  Loader,
 } from 'lucide-react';
 import useTicketStore from '../../stores/ticketStore';
+import useAuthStore from '../../stores/authStore';
 import toast from 'react-hot-toast';
 
 const ManageTicketsPage = () => {
   const { tickets, fetchTickets, updateTicketStatus, deleteTicket, isLoading } = useTicketStore();
+  const { user } = useAuthStore();
   const [statusFilter, setStatusFilter] = useState('all');
   const [processingId, setProcessingId] = useState(null);
+
+  const canDelete = user?.role === 'admin';
 
   useEffect(() => {
     fetchTickets();
@@ -223,12 +226,14 @@ const ManageTicketsPage = () => {
                       >
                         <MessageSquare className="w-4 h-4" />
                       </Link>
-                      <button
-                        onClick={() => handleDelete(ticket._id)}
-                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(ticket._id)}
+                          className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
