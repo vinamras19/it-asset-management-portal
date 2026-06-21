@@ -8,14 +8,18 @@ import {
   TrendingUp,
   DollarSign,
   AlertTriangle,
-  CheckCircle,
-  Clock,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import useAuthStore from '../../stores/authStore';
 import api from '../../lib/axios';
 import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
+  const { user } = useAuthStore();
+  const canReadUsers = user?.role === 'admin' || user?.role === 'auditor';
+  const canReadSecurity = user?.role === 'admin' || user?.role === 'auditor';
+  const canViewTickets = user?.role === 'admin' || user?.role === 'manager';
+
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     assets: { total: 0, available: 0, assigned: 0, maintenance: 0 },
@@ -32,19 +36,25 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [assetsRes, requestsRes, ticketsRes, usersRes, requestStatsRes, ticketStatsRes, securityRes] = await Promise.all([
+        const results = await Promise.allSettled([
           api.get('/assets'),
           api.get('/requests/admin/all'),
-          api.get('/tickets'),
-          api.get('/auth/users'),
-          api.get('/requests/admin/stats'),
-          api.get('/tickets/admin/stats'),
-          api.get('/audit/security-metrics'),
+          canViewTickets ? api.get('/tickets') : Promise.resolve(null),
+          canReadUsers ? api.get('/auth/users') : Promise.resolve(null),
+          canReadSecurity ? api.get('/audit/security-metrics') : Promise.resolve(null),
         ]);
+        const [assetsRes, requestsRes, ticketsRes, usersRes, securityRes] = results;
+        const dataOf = (r) => (r.status === 'fulfilled' && r.value ? r.value.data : null);
 
-        const assets = assetsRes.data;
-        const requests = requestsRes.data;
-        const tickets = ticketsRes.data;
+        const assets = dataOf(assetsRes) || [];
+        const requests = dataOf(requestsRes) || [];
+        const tickets = dataOf(ticketsRes) || [];
+        const usersData = dataOf(usersRes);
+        const security = dataOf(securityRes);
+
+        if (assetsRes.status === 'rejected') {
+          toast.error('Failed to load dashboard data');
+        }
 
         // Stats calculation
         const available = assets.filter((a) => a.status === 'available').length;
@@ -62,7 +72,7 @@ const AdminDashboard = () => {
           assets: { total: assets.length, available, assigned, maintenance },
           requests: { pending: pendingRequests, approved: approvedRequests },
           tickets: { open: openTickets, inProgress: inProgressTickets },
-          users: { total: usersRes.data.length },
+          users: { total: usersData ? usersData.length : 0 },
           totalValue,
         });
 
@@ -74,10 +84,9 @@ const AdminDashboard = () => {
 
         setRecentRequests(requests.slice(0, 5));
         setRecentTickets(tickets.slice(0, 5));
-        setSecurityMetrics(securityRes.data);
+        setSecurityMetrics(security);
       } catch (error) {
         console.error('Dashboard error:', error);
-        toast.error('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
@@ -143,30 +152,34 @@ const AdminDashboard = () => {
           <p className="text-sm text-gray-400">Pending Requests</p>
         </Link>
 
-        <Link to="/admin/tickets" className="bg-gray-800 rounded-xl border border-gray-700 p-5 hover:border-gray-600 transition-colors">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
-              <HelpCircle className="w-5 h-5 text-orange-500" />
+        {canViewTickets && (
+          <Link to="/admin/tickets" className="bg-gray-800 rounded-xl border border-gray-700 p-5 hover:border-gray-600 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                <HelpCircle className="w-5 h-5 text-orange-500" />
+              </div>
+              {stats.tickets.open > 0 && (
+                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full">
+                  {stats.tickets.open} open
+                </span>
+              )}
             </div>
-            {stats.tickets.open > 0 && (
-              <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full">
-                {stats.tickets.open} open
-              </span>
-            )}
-          </div>
-          <p className="text-2xl font-bold text-white">{stats.tickets.open + stats.tickets.inProgress}</p>
-          <p className="text-sm text-gray-400">Active Tickets</p>
-        </Link>
+            <p className="text-2xl font-bold text-white">{stats.tickets.open + stats.tickets.inProgress}</p>
+            <p className="text-sm text-gray-400">Active Tickets</p>
+          </Link>
+        )}
 
-        <Link to="/admin/users" className="bg-gray-800 rounded-xl border border-gray-700 p-5 hover:border-gray-600 transition-colors">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-              <Users className="w-5 h-5 text-purple-500" />
+        {canReadUsers && (
+          <Link to="/admin/users" className="bg-gray-800 rounded-xl border border-gray-700 p-5 hover:border-gray-600 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-purple-500" />
+              </div>
             </div>
-          </div>
-          <p className="text-2xl font-bold text-white">{stats.users.total}</p>
-          <p className="text-sm text-gray-400">Total Users</p>
-        </Link>
+            <p className="text-2xl font-bold text-white">{stats.users.total}</p>
+            <p className="text-sm text-gray-400">Total Users</p>
+          </Link>
+        )}
       </div>
 
       {/* Secondary Stats */}
@@ -316,33 +329,35 @@ const AdminDashboard = () => {
         </div>
 
         {/* Recent Tickets */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700">
-          <div className="flex items-center justify-between p-4 border-b border-gray-700">
-            <h2 className="font-semibold text-white">Recent Tickets</h2>
-            <Link to="/admin/tickets" className="text-sm text-blue-500 hover:text-blue-400">
-              View all
-            </Link>
-          </div>
-          <div className="p-4">
-            {recentTickets.length === 0 ? (
-              <p className="text-gray-400 text-center py-4">No tickets</p>
-            ) : (
-              <div className="space-y-3">
-                {recentTickets.map((ticket) => (
-                  <div key={ticket._id} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-white truncate max-w-xs">{ticket.title}</p>
-                      <p className="text-sm text-gray-400">{ticket.user?.name}</p>
+        {canViewTickets && (
+          <div className="bg-gray-800 rounded-xl border border-gray-700">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h2 className="font-semibold text-white">Recent Tickets</h2>
+              <Link to="/admin/tickets" className="text-sm text-blue-500 hover:text-blue-400">
+                View all
+              </Link>
+            </div>
+            <div className="p-4">
+              {recentTickets.length === 0 ? (
+                <p className="text-gray-400 text-center py-4">No tickets</p>
+              ) : (
+                <div className="space-y-3">
+                  {recentTickets.map((ticket) => (
+                    <div key={ticket._id} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-white truncate max-w-xs">{ticket.title}</p>
+                        <p className="text-sm text-gray-400">{ticket.user?.name}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(ticket.status)}`}>
+                        {ticket.status}
+                      </span>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                      {ticket.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
