@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Package, MapPin, Calendar, Tag, AlertTriangle } from 'lucide-react';
 import useAuthStore from '../stores/authStore';
 import api from '../lib/axios';
@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 
 const MyAssetsPage = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,10 +72,15 @@ const MyAssetsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {assets.map((asset) => (
-            <Link
+            <div
               key={asset._id}
-              to={`/assets/${asset._id}`}
-              className="bg-gray-800 rounded-xl border border-gray-700 p-5 hover:border-gray-600 transition-colors"
+              onClick={() => navigate(`/assets/${asset._id}`)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') navigate(`/assets/${asset._id}`);
+              }}
+              role="button"
+              tabIndex={0}
+              className="bg-gray-800 rounded-xl border border-gray-700 p-5 hover:border-gray-600 transition-colors cursor-pointer"
             >
               {/* Asset Header */}
               <div className="flex items-start gap-4 mb-4">
@@ -126,7 +132,7 @@ const MyAssetsPage = () => {
                   Report Issue
                 </Link>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}
