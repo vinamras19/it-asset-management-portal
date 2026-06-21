@@ -10,11 +10,13 @@ import {
   Download,
 } from 'lucide-react';
 import useAssetStore from '../../stores/assetStore';
+import useAuthStore from '../../stores/authStore';
 import api from '../../lib/axios';
 import toast from 'react-hot-toast';
 
 const ManageAssetsPage = () => {
   const { assets, fetchAssets, createAsset, updateAsset, deleteAsset, isLoading } = useAssetStore();
+  const { user } = useAuthStore();
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
@@ -24,7 +26,7 @@ const ManageAssetsPage = () => {
     name: '',
     description: '',
     purchasePrice: '',
-    category: 'Laptop',
+    category: 'Laptops',
     serialNumber: '',
     status: 'available',
     condition: 'New',
@@ -34,13 +36,18 @@ const ManageAssetsPage = () => {
     usefulLife: 3,
   });
 
-  const categories = ['Laptop', 'Desktop', 'Monitor', 'Keyboard', 'Mouse', 'Phone', 'Tablet', 'Server', 'Network', 'Printer', 'Other'];
-  const statuses = ['available', 'assigned', 'maintenance', 'retired', 'lost'];
+  const role = user?.role;
+  const canManage = role === 'admin' || role === 'manager';
+  const canDelete = role === 'admin';
+  const canReadUsers = role === 'admin' || role === 'auditor';
+
+  const categories = ['Laptops', 'Desktops', 'Monitors', 'Keyboards', 'Mice', 'Phones', 'Tablets', 'Servers', 'Networking', 'Printers', 'Other'];
+  const statuses = ['available', 'assigned', 'maintenance', 'retired'];
   const conditions = ['New', 'Excellent', 'Good', 'Fair', 'Damaged'];
 
   useEffect(() => {
     fetchAssets();
-    fetchUsers();
+    if (canReadUsers) fetchUsers();
   }, [fetchAssets]);
 
   const fetchUsers = async () => {
@@ -74,7 +81,7 @@ const ManageAssetsPage = () => {
         name: '',
         description: '',
         purchasePrice: '',
-        category: 'Laptop',
+        category: 'Laptops',
         serialNumber: '',
         status: 'available',
         condition: 'New',
@@ -182,13 +189,15 @@ const ManageAssetsPage = () => {
             <Download className="w-5 h-5" />
             Export CSV
           </button>
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Add Asset
-          </button>
+          {canManage && (
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Add Asset
+            </button>
+          )}
         </div>
       </div>
 
@@ -248,18 +257,25 @@ const ManageAssetsPage = () => {
                   <td className="p-4 text-white font-medium">${asset.purchasePrice?.toLocaleString()}</td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenModal(asset)}
-                        className="p-2 text-gray-400 hover:text-blue-400 transition-colors"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(asset)}
-                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canManage && (
+                        <button
+                          onClick={() => handleOpenModal(asset)}
+                          className="p-2 text-gray-400 hover:text-blue-400 transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(asset)}
+                          className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      {!canManage && !canDelete && (
+                        <span className="text-xs text-gray-500">View only</span>
+                      )}
                     </div>
                   </td>
                 </tr>
