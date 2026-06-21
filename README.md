@@ -6,8 +6,8 @@ An inventory management system for IT asset tracking, license management, and em
 
 ## Application Overview
 
-* **Performance & Caching:** Uses [Redis](https://redis.io/) to cache high-frequency read operations (such as asset listings and statistics), significantly reducing load on the primary MongoDB database.
-* **Security Architecture:** Implements a secure authentication flow using JWTs in http-only cookies to prevent XSS. Critical actions are protected by [Speakeasy (TOTP)](https://github.com/speakeasyjs/speakeasy), Rate Limiting, and Role-Based Access Control (RBAC).
+* **Performance & Caching:** Uses [Redis](https://redis.io/) to cache high-frequency reads (asset listings and statistics) on a 300s TTL, so repeated reads are served from cache instead of MongoDB.
+* **Security Architecture:** Authentication uses JWTs in http-only cookies, so client-side scripts cannot read the tokens. Access is governed by Role-Based Access Control (RBAC), with optional [TOTP](https://github.com/speakeasyjs/speakeasy) two-factor login and rate-limited API endpoints.
 * **Data Processing:** Uses [MongoDB Aggregation Pipelines](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) for server-side statistics and reporting. Includes PDF report generation for assets, tickets, and audit logs.
 * **Asset Lifecycle:** Enforces validated status transitions for assets (Available → Assigned → Maintenance → Retired → Lost), rejecting invalid state changes and maintaining audit trails for every transition.
 
@@ -20,9 +20,9 @@ Tiered architecture with separate client, API, and data layers, containerized vi
 ```mermaid
 graph TD
     Client[React Frontend] -->|REST API| API[Node.js Express API]
-    API -->|Read-Through Cache| Cache[(Redis)]
+    API -->|Cache-Aside| Cache[(Redis)]
     API -->|Persistent Storage| DB[(MongoDB)]
-    API -->|Security| Auth[TOTP & JWT]
+    API -->|Security| Auth["TOTP & JWT"]
 ```
 
 ### Functional Logic Distribution
@@ -32,19 +32,22 @@ graph LR
     subgraph Frontend [Client-Side]
         UI[User Dashboard]
         Admin[Admin Panel]
-        Forms[Request & Ticket Forms]
+        Forms["Request & Ticket Forms"]
     end
 
     subgraph Backend [Server-Side]
+        API[REST Controllers]
         Agg[MongoDB Aggregations]
         Cache_L[Redis Cache Layer]
         PDF[PDF Report Generation]
     end
 
-    Agg -->|Statistics & Metrics| UI
-    Agg -->|Admin Analytics| Admin
+    UI -->|fetches lists| API
+    Forms -->|create / submit| API
+    Agg -->|security metrics| Admin
+    PDF -->|downloadable reports| Admin
+    Cache_L -.->|300s TTL| API
     Cache_L -.->|300s TTL| Agg
-    PDF -->|Downloadable Reports| Admin
 ```
 ## Getting Started
 
@@ -56,7 +59,7 @@ cd it-asset-management-portal
 2. Configure Environment Create a .env file in the root directory.
 
 ```bash
-MONGO_URI=mongodb://mongo:27017/it_asset_management
+MONGO_URI=mongodb://mongo:27017/itassetmgmt
 UPSTASH_REDIS_URL=redis://redis:6379
 ACCESS_TOKEN_SECRET=your_access_secret_key
 REFRESH_TOKEN_SECRET=your_refresh_secret_key
@@ -70,7 +73,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 ```bash
 docker-compose up --build -d
 ```
-4. Seed the Database Populate the system with initial users, assets, and request history for testing. (seed.js)
+4. Seed the Database Populate the system with initial users, assets, licenses, and support tickets for testing. (seed.js)
 
 ```bash
 docker-compose exec app npm run seed
@@ -98,8 +101,8 @@ Employee: employee@vsitcompany.com / User@123   (Request assets & tickets)
 Open Developer Tools (F12) → Network Tab
 Refresh the Assets page or Admin Dashboard
 
-First Load: ~100-200ms (fetched from MongoDB)
-Subsequent Loads: <20ms (served from Redis cache)
+First load fetches from MongoDB.
+Subsequent loads are served from the Redis cache and return noticeably faster (compare the Time column).
 ```
 
 3. Procurement Workflow:
