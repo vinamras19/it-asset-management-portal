@@ -80,7 +80,9 @@ const LoginPage = () => {
         <p className="text-xs font-medium text-gray-400 mb-2">Demo Accounts:</p>
         <div className="space-y-1 text-xs text-gray-500">
           <p><span className="text-gray-400">Admin:</span> admin@vsitcompany.com / Admin@123</p>
-          <p><span className="text-gray-400">Employee:</span> john.smith@vsitcompany.com / User@123</p>
+          <p><span className="text-gray-400">Manager:</span> manager@vsitcompany.com / Manager@123</p>
+          <p><span className="text-gray-400">Auditor:</span> auditor@vsitcompany.com / Auditor@123</p>
+          <p><span className="text-gray-400">Employee:</span> employee@vsitcompany.com / User@123</p>
         </div>
       </div>
 
