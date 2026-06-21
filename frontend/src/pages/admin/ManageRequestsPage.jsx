@@ -10,23 +10,27 @@ import {
   Loader,
 } from 'lucide-react';
 import useRequestStore from '../../stores/requestStore';
+import useAuthStore from '../../stores/authStore';
 import toast from 'react-hot-toast';
 
 const ManageRequestsPage = () => {
   const { allRequests, fetchAllRequests, updateRequestStatus, isLoading } = useRequestStore();
+  const { user } = useAuthStore();
   const [expandedRequest, setExpandedRequest] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [processingId, setProcessingId] = useState(null);
   const [actionData, setActionData] = useState({ reason: '', adminNotes: '' });
 
+  const canProcess = user?.role === 'admin' || user?.role === 'manager';
+
   useEffect(() => {
     fetchAllRequests();
   }, [fetchAllRequests]);
 
-  const handleStatusUpdate = async (requestId, newStatus) => {
+  const handleStatusUpdate = async (requestId, newStatus, reason = actionData.reason) => {
     setProcessingId(requestId);
     try {
-      await updateRequestStatus(requestId, newStatus, actionData.reason, actionData.adminNotes);
+      await updateRequestStatus(requestId, newStatus, reason, actionData.adminNotes);
       toast.success(`Request ${newStatus.toLowerCase()}`);
       setActionData({ reason: '', adminNotes: '' });
     } catch (error) {
@@ -226,7 +230,7 @@ const ManageRequestsPage = () => {
                   </div>
 
                   {/* Admin Actions */}
-                  {request.status === 'Pending' && (
+                  {canProcess && request.status === 'Pending' && (
                     <div className="border-t border-gray-700 pt-4">
                       <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-400 mb-2">Admin Notes</label>
@@ -257,8 +261,7 @@ const ManageRequestsPage = () => {
                           onClick={() => {
                             const reason = prompt('Enter rejection reason:');
                             if (reason) {
-                              setActionData({ ...actionData, reason });
-                              handleStatusUpdate(request._id, 'Rejected');
+                              handleStatusUpdate(request._id, 'Rejected', reason);
                             }
                           }}
                           disabled={processingId === request._id}
@@ -272,7 +275,7 @@ const ManageRequestsPage = () => {
                   )}
 
                   {/* Fulfill Action */}
-                  {request.status === 'Approved' && (
+                  {canProcess && request.status === 'Approved' && (
                     <div className="border-t border-gray-700 pt-4">
                       <button
                         onClick={() => handleStatusUpdate(request._id, 'Fulfilled')}
