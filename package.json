@@ -10,7 +10,7 @@
     "build:frontend": "cd frontend && npm install && npm run build",
     "start": "cd backend && node server.js",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "seed": "node seed.js"
+    "seed": "cd backend && node seed.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
