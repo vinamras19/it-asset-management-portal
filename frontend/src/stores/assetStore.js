@@ -1,11 +1,10 @@
 import { create } from 'zustand';
 import api from '../lib/axios';
 
-const useAssetStore = create((set, get) => ({
+const useAssetStore = create((set) => ({
   assets: [],
   currentAsset: null,
   isLoading: false,
-  stats: [],
 
   fetchAssets: async () => {
     set({ isLoading: true });
@@ -50,29 +49,6 @@ const useAssetStore = create((set, get) => ({
     set((state) => ({
       assets: state.assets.filter((a) => a._id !== id),
     }));
-  },
-
-  searchAssets: async (query) => {
-    if (!query) return [];
-    const response = await api.get(`/assets/search?query=${encodeURIComponent(query)}`);
-    return response.data;
-  },
-
-  fetchAssetStats: async () => {
-    const response = await api.get('/assets/stats');
-    set({ stats: response.data });
-    return response.data;
-  },
-
-  fetchAssignedAssets: async (userId) => {
-    const response = await api.get(`/assets/assigned/${userId}`);
-    return response.data;
-  },
-
-  bulkUpdateStatus: async (assetIds, status) => {
-    const response = await api.post('/assets/bulk/status', { assetIds, status });
-    await get().fetchAssets();
-    return response.data;
   },
 
   clearCurrentAsset: () => set({ currentAsset: null }),

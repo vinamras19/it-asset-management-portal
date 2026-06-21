@@ -7,8 +7,6 @@ const useRequestStore = create(
     (set, get) => ({
       requests: [],
       allRequests: [],
-      currentRequest: null,
-      stats: [],
       isLoading: false,
       cart: [],
 
@@ -67,12 +65,6 @@ const useRequestStore = create(
         }
       },
 
-      fetchRequestById: async (id) => {
-        const response = await api.get(`/requests/${id}`);
-        set({ currentRequest: response.data });
-        return response.data;
-      },
-
       createRequest: async (requestData) => {
         const { cart } = get();
         const assets = cart.map((item) => ({
@@ -114,12 +106,6 @@ const useRequestStore = create(
             r._id === id ? response.data : r
           ),
         }));
-        return response.data;
-      },
-
-      fetchRequestStats: async () => {
-        const response = await api.get('/requests/admin/stats');
-        set({ stats: response.data });
         return response.data;
       },
     }),

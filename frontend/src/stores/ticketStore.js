@@ -4,7 +4,6 @@ import api from '../lib/axios';
 const useTicketStore = create((set, get) => ({
   tickets: [],
   currentTicket: null,
-  stats: [],
   isLoading: false,
 
   fetchTickets: async () => {
@@ -71,12 +70,6 @@ const useTicketStore = create((set, get) => ({
     set((state) => ({
       tickets: state.tickets.filter((t) => t._id !== id),
     }));
-  },
-
-  fetchTicketStats: async () => {
-    const response = await api.get('/tickets/admin/stats');
-    set({ stats: response.data });
-    return response.data;
   },
 
   clearCurrentTicket: () => set({ currentTicket: null }),
