@@ -23,8 +23,6 @@ const MainLayout = () => {
     navigate('/login');
   };
 
-  const isAdmin = user?.role === 'admin';
-
   const mainNavItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/assets', icon: Package, label: 'Asset Catalog' },
@@ -35,15 +33,17 @@ const MainLayout = () => {
   ];
 
   const adminNavItems = [
-    { to: '/admin', icon: BarChart3, label: 'Admin Dashboard' },
-    { to: '/admin/assets', icon: Package, label: 'Manage Assets' },
-    { to: '/admin/requests', icon: ClipboardList, label: 'Manage Requests' },
-    { to: '/admin/tickets', icon: HelpCircle, label: 'Manage Tickets' },
-    { to: '/admin/users', icon: Users, label: 'Manage Users' },
-    { to: '/admin/licenses', icon: Key, label: 'Manage Licenses' },
-    { to: '/admin/audit', icon: Shield, label: 'Audit Logs' },
-    { to: '/admin/reports', icon: FileText, label: 'Reports' },
+    { to: '/admin', icon: BarChart3, label: 'Admin Dashboard', roles: ['admin', 'manager', 'auditor'] },
+    { to: '/admin/assets', icon: Package, label: 'Manage Assets', roles: ['admin', 'manager', 'auditor'] },
+    { to: '/admin/requests', icon: ClipboardList, label: 'Manage Requests', roles: ['admin', 'manager', 'auditor'] },
+    { to: '/admin/tickets', icon: HelpCircle, label: 'Manage Tickets', roles: ['admin', 'manager'] },
+    { to: '/admin/users', icon: Users, label: 'Manage Users', roles: ['admin', 'auditor'] },
+    { to: '/admin/licenses', icon: Key, label: 'Manage Licenses', roles: ['admin'] },
+    { to: '/admin/audit', icon: Shield, label: 'Audit Logs', roles: ['admin', 'auditor'] },
+    { to: '/admin/reports', icon: FileText, label: 'Reports', roles: ['admin'] },
   ];
+
+  const visibleAdminNav = adminNavItems.filter((item) => item.roles.includes(user?.role));
 
   const NavItem = ({ to, icon: Icon, label, onClick }) => (
     <NavLink
@@ -87,7 +87,7 @@ const MainLayout = () => {
             ))}
           </div>
 
-          {isAdmin && (
+          {visibleAdminNav.length > 0 && (
             <div className="mb-6">
               <button
                 onClick={() => setAdminMenuOpen(!adminMenuOpen)}
@@ -98,7 +98,7 @@ const MainLayout = () => {
               </button>
               {adminMenuOpen && (
                 <div className="mt-1 space-y-1">
-                  {adminNavItems.map((item) => (
+                  {visibleAdminNav.map((item) => (
                     <NavItem key={item.to} {...item} onClick={() => setSidebarOpen(false)} />
                   ))}
                 </div>

@@ -38,12 +38,12 @@ const LoadingScreen = () => (
   </div>
 );
 
-const ProtectedRoute = ({ children, adminOnly = false }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, isCheckingAuth, user } = useAuthStore();
 
   if (isCheckingAuth) return <LoadingScreen />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (adminOnly && user?.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  if (allowedRoles && !allowedRoles.includes(user?.role)) return <Navigate to="/dashboard" replace />;
 
   return children;
 };
@@ -75,7 +75,7 @@ const App = () => {
         <Route path="/2fa-verify" element={<TwoFactorPage />} />
       </Route>
 
-      {/* Protected Routes */}
+      {/* Protected Routes (all authenticated users) */}
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/assets" element={<AssetsPage />} />
@@ -87,18 +87,16 @@ const App = () => {
         <Route path="/support/:id" element={<TicketDetailPage />} />
         <Route path="/licenses" element={<LicensesPage />} />
         <Route path="/profile" element={<ProfilePage />} />
-      </Route>
 
-      {/* Admin Routes */}
-      <Route element={<ProtectedRoute adminOnly><MainLayout /></ProtectedRoute>}>
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/assets" element={<ManageAssetsPage />} />
-        <Route path="/admin/requests" element={<ManageRequestsPage />} />
-        <Route path="/admin/tickets" element={<ManageTicketsPage />} />
-        <Route path="/admin/users" element={<ManageUsersPage />} />
-        <Route path="/admin/licenses" element={<ManageLicensesPage />} />
-        <Route path="/admin/audit" element={<AuditLogsPage />} />
-        <Route path="/admin/reports" element={<ReportsPage />} />
+        {/* Admin Routes (gated per role) */}
+        <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'manager', 'auditor']}><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/assets" element={<ProtectedRoute allowedRoles={['admin', 'manager', 'auditor']}><ManageAssetsPage /></ProtectedRoute>} />
+        <Route path="/admin/requests" element={<ProtectedRoute allowedRoles={['admin', 'manager', 'auditor']}><ManageRequestsPage /></ProtectedRoute>} />
+        <Route path="/admin/tickets" element={<ProtectedRoute allowedRoles={['admin', 'manager']}><ManageTicketsPage /></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin', 'auditor']}><ManageUsersPage /></ProtectedRoute>} />
+        <Route path="/admin/licenses" element={<ProtectedRoute allowedRoles={['admin']}><ManageLicensesPage /></ProtectedRoute>} />
+        <Route path="/admin/audit" element={<ProtectedRoute allowedRoles={['admin', 'auditor']}><AuditLogsPage /></ProtectedRoute>} />
+        <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><ReportsPage /></ProtectedRoute>} />
       </Route>
 
       {/* Redirects */}
