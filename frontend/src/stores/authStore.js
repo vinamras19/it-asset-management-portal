@@ -51,7 +51,7 @@ const useAuthStore = create((set) => ({
 
   updateProfile: async (data) => {
     const response = await api.put('/auth/profile', data);
-    set({ user: response.data });
+    set((state) => ({ user: { ...state.user, ...response.data } }));
     return response.data;
   },
 
