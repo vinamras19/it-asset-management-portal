@@ -49,7 +49,7 @@ const TwoFactorPage = () => {
           <Shield className="w-8 h-8 text-blue-500" />
         </div>
         <h2 className="text-2xl font-bold text-white mb-2">Two-Factor Authentication</h2>
-        <p className="text-gray-400">Enter the 6-digit code from your authenticator app</p>
+        <p className="text-gray-400">Enter the 6-digit code from your authenticator app, or a backup code</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -57,15 +57,15 @@ const TwoFactorPage = () => {
           <input
             type="text"
             value={token}
-            onChange={(e) => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="000000"
+            onChange={(e) => setToken(e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8))}
+            placeholder="Enter code"
             required
-            maxLength={6}
+            maxLength={8}
             className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-center text-2xl tracking-widest placeholder-gray-500 focus:outline-none focus:border-blue-500"
           />
         </div>
 
-        <button type="submit" disabled={isLoading || token.length !== 6} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
+        <button type="submit" disabled={isLoading || token.length < 6} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
           {isLoading ? <><Loader className="w-5 h-5 animate-spin" /> Verifying...</> : 'Verify'}
         </button>
       </form>

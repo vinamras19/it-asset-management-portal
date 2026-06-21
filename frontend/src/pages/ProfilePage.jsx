@@ -78,7 +78,7 @@ const ProfilePage = () => {
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
-    
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -121,7 +121,7 @@ const ProfilePage = () => {
     try {
       const response = await api.post('/2fa/verify-setup', { token: verificationToken });
       setBackupCodes(response.data.backupCodes);
-      setTwoFactorStatus({ enabled: true, backupCodesRemaining: 10 });
+      setTwoFactorStatus({ enabled: true, backupCodesRemaining: response.data.backupCodes?.length || 0 });
       setQrCode(null);
       setManualKey('');
       setVerificationToken('');
